@@ -1,0 +1,164 @@
+# 花蓮光復清淤地圖 - Git 忽略檔案
+# Hualien Guangfu Cleanup Progress Map - Git Ignore File
+
+# ===========================================
+# 🔒 環境變數與敏感檔案 | Environment Variables & Sensitive Files
+# ===========================================
+
+# 本地環境變數檔案 | Local environment variable files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 備份的環境變數檔案 | Backup environment files
+.env.*.backup
+.env.*.bak
+
+# API 金鑰檔案 | API key files
+**/keys/
+**/*.key
+**/*.pem
+**/secrets.json
+
+# ===========================================
+# 📦 依賴套件 | Dependencies
+# ===========================================
+
+# Node.js 模組 | Node.js modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Yarn 檔案 | Yarn files
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ===========================================
+# 🏗️ 建置輸出 | Build Output
+# ===========================================
+
+# Next.js 建置輸出 | Next.js build output
+.next/
+out/
+dist/
+build/
+
+# 靜態檔案生成 | Static file generation
+/public/sitemap.xml
+/public/robots.txt
+
+# ===========================================
+# 🔧 開發工具 | Development Tools
+# ===========================================
+
+# IDE 設定檔案 | IDE configuration files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 作業系統檔案 | Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===========================================
+# 📊 測試與覆蓋率 | Testing & Coverage
+# ===========================================
+
+# 測試覆蓋率報告 | Test coverage reports
+coverage/
+.nyc_output/
+*.lcov
+
+# Jest 快取 | Jest cache
+.jest/
+
+# ===========================================
+# 📝 日誌檔案 | Log Files
+# ===========================================
+
+# 應用程式日誌 | Application logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===========================================
+# 🗂️ 暫存檔案 | Temporary Files
+# ===========================================
+
+# 暫存目錄 | Temporary directories
+tmp/
+temp/
+
+# 編輯器暫存檔 | Editor temporary files
+*.tmp
+*.temp
+
+# ===========================================
+# 🌍 Next.js 特定檔案 | Next.js Specific
+# ===========================================
+
+# Next.js telemetry
+.next/telemetry.json
+
+# Vercel 部署檔案 | Vercel deployment files
+.vercel
+
+# ===========================================
+# 🐍 Python 檔案 (用於背景任務) | Python Files (for background tasks)
+# ===========================================
+
+# Python 快取 | Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python 虛擬環境 | Python virtual environment
+venv/
+env/
+ENV/
+
+# ===========================================
+# 🗺️ 地圖相關檔案 | Map Related Files
+# ===========================================
+
+# 本地生成的圖磚檔案 | Locally generated tile files
+tiles/
+map-cache/
+
+# 測試用的地圖資料 | Test map data
+test-data/
+mock-tiles/
+
+# ===========================================
+# 🔒 安全性掃描報告 | Security Scan Reports
+# ===========================================
+
+# 安全性掃描結果 | Security scan results
+security-report.json
+vulnerability-report.html
+
+# ===========================================
+# ⚠️ 重要提醒 | Important Reminders
+# ===========================================
+
+# 如果您意外提交了敏感檔案，請：
+# If you accidentally commit sensitive files:
+# 1. 立即輪換所有 API 金鑰 | Immediately rotate all API keys
+# 2. 使用 git filter-branch 或 BFG 清理歷史記錄 | Use git filter-branch or BFG to clean history
+# 3. 強制推送清理後的歷史記錄 | Force push the cleaned history
