@@ -3,38 +3,38 @@
 ## 階段一：專案初始化與基礎設定
 
 ### 1.1 專案建立與套件安裝
-- [ ] 初始化 Next.js 專案 (App Router)：`yarn create next-app@latest`
-- [ ] 安裝 TypeScript 支援 (建立專案時選擇)
-- [ ] 設定 Tailwind CSS (建立專案時選擇)
-- [ ] 安裝並設定 shadcn/ui：`npx shadcn@latest init`
-- [ ] 安裝 Leaflet 相關套件
-  - [ ] `yarn add leaflet react-leaflet`
-  - [ ] `yarn add -D @types/leaflet`
-- [ ] 安裝其他必要套件
-  - [ ] `yarn add lucide-react`
-  - [ ] `yarn add @supabase/supabase-js`
-  - [ ] `yarn add @upstash/redis`
-  - [ ] `yarn add zod`
+- [x] 初始化 Next.js 專案 (App Router)：`npx create-next-app@latest`
+- [x] 安裝 TypeScript 支援 (建立專案時選擇)
+- [x] 設定 Tailwind CSS (建立專案時選擇)
+- [x] 安裝並設定 shadcn/ui：`npx shadcn@latest init`
+- [x] 安裝 Leaflet 相關套件
+  - [x] `yarn add leaflet react-leaflet`
+  - [x] `yarn add -D @types/leaflet`
+- [x] 安裝其他必要套件
+  - [x] `yarn add lucide-react`
+  - [x] `yarn add @supabase/supabase-js`
+  - [x] `yarn add @upstash/redis`
+  - [x] `yarn add zod`
 
 ### 1.2 專案結構建立
-- [ ] 建立 `src/` 資料夾結構
-- [ ] 建立 `components/` 資料夾
-- [ ] 建立 `lib/` 資料夾
-- [ ] 建立 `types/` 資料夾
-- [ ] 建立 `scripts/` 資料夾
-- [ ] 建立環境變數檔案：
-  - [ ] `.env.example` (開源專案範本)
-  - [ ] `.env.local.example` (本地開發範本)
-- [ ] 建立 `.gitignore` 檔案 (確保 `.env.local` 被忽略)
-- [ ] 設定本地環境變數：`cp .env.example .env.local`
+- [x] 建立 `src/` 資料夾結構
+- [x] 建立 `components/` 資料夾
+- [x] 建立 `lib/` 資料夾
+- [x] 建立 `types/` 資料夾
+- [x] 建立 `scripts/` 資料夾
+- [x] 建立環境變數檔案：
+  - [x] `.env.example` (開源專案範本)
+  - [x] `.env.local.example` (本地開發範本)
+- [x] 建立 `.gitignore` 檔案 (確保 `.env.local` 被忽略)
+- [x] 設定本地環境變數：`cp .env.example .env.local`
 
 ### 1.3 開發環境配置
-- [ ] 設定 TypeScript 配置檔案
-- [ ] 設定 ESLint 規則
+- [x] 設定 TypeScript 配置檔案
+- [x] 設定 ESLint 規則
 - [ ] 設定 Prettier 格式化規則
-- [ ] 配置 `next.config.js`
-- [ ] 設定 `tailwind.config.js`
-- [ ] 初始化 `components.json` (shadcn/ui)
+- [x] 配置 `next.config.ts`
+- [x] 設定 `tailwind.config.js`
+- [x] 初始化 `components.json` (shadcn/ui)
 
 ## 階段二：前端核心功能開發
 
@@ -289,8 +289,8 @@
 ## 里程碑檢查點
 
 ### 🎯 里程碑 1：基礎建設完成
-- [ ] 專案建立與環境設定完成
-- [ ] 基礎 UI 框架建立完成
+- [x] 專案建立與環境設定完成
+- [x] 基礎 UI 框架建立完成
 - [ ] 地圖顯示功能正常
 
 ### 🎯 里程碑 2：核心功能完成

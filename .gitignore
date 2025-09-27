@@ -7,6 +7,7 @@
 
 # 本地環境變數檔案 | Local environment variable files
 .env
+.env*
 .env.local
 .env.development.local
 .env.test.local
@@ -28,16 +29,27 @@
 
 # Node.js 模組 | Node.js modules
 node_modules/
+/.pnp
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
 # Yarn 檔案 | Yarn files
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 .yarn/cache
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# 避免混用套件管理工具 | Prevent mixing package managers
+package-lock.json
+pnpm-lock.yaml
 
 # ===========================================
 # 🏗️ 建置輸出 | Build Output
@@ -45,9 +57,12 @@ yarn-error.log*
 
 # Next.js 建置輸出 | Next.js build output
 .next/
+/.next/
 out/
+/out/
 dist/
 build/
+/build
 
 # 靜態檔案生成 | Static file generation
 /public/sitemap.xml
@@ -92,9 +107,6 @@ coverage/
 # 應用程式日誌 | Application logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 lerna-debug.log*
 
 # ===========================================
@@ -115,6 +127,10 @@ temp/
 
 # Next.js telemetry
 .next/telemetry.json
+
+# TypeScript 建置檔案 | TypeScript build files
+*.tsbuildinfo
+next-env.d.ts
 
 # Vercel 部署檔案 | Vercel deployment files
 .vercel
