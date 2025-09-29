@@ -80,7 +80,7 @@ export default function LocationMarker({
       )}
 
       {/* 位置標記 */}
-      <Marker position={[position.lat, position.lon]} icon={userLocationIcon} zIndexOffset={1000} />
+      <Marker position={[position.lat, position.lon]} icon={userLocationIcon} />
     </>
   );
 }

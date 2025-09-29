@@ -32,7 +32,7 @@ export default function ReportButtons({
   const isLocationAvailable = !!userLocation;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-pb z-[1001]">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-pb z-[1010]">
       <div className="max-w-md mx-auto space-y-3">
         {/* 位置狀態指示 */}
         <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">

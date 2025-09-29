@@ -55,7 +55,7 @@ assignees: ''
 - [ ] Firefox
 - [ ] Safari
 - [ ] Edge
-- [ ] 其他 | Other: ****\_\_\_****
+- [ ] 其他 | Other: \***\*\_\_\_\*\***
 
 **版本資訊 | Version Information:**
 

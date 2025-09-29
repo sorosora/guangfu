@@ -211,7 +211,7 @@ function LocationMarkerInternal({
       )}
 
       {/* 位置標記 */}
-      <Marker position={[position.lat, position.lon]} icon={userLocationIcon} zIndexOffset={1000} />
+      <Marker position={[position.lat, position.lon]} icon={userLocationIcon} />
     </>
   );
 }
@@ -230,7 +230,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 ) {
   const leafletMapRef = useRef<import('leaflet').Map | null>(null);
   const mapControlRef = useRef<MapRef | null>(null);
-  const [isClient, setIsClient] = useState(false);
 
   // 將 ref 轉發到 mapControlRef
   useImperativeHandle(ref, () => ({
@@ -241,37 +240,46 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   // 使用動態中心點，如果沒有傳入則使用當前區域配置的中心點
   const mapCenter = center || areaConfig.center;
 
-  // 確保在客戶端執行
+  // 動態載入 Leaflet
   useEffect(() => {
-    setIsClient(true);
 
     // 動態載入 Leaflet
     const loadLeaflet = async () => {
       if (typeof window !== 'undefined' && !L) {
-        const leaflet = await import('leaflet');
-        L = leaflet.default;
+        try {
+          const leaflet = await import('leaflet');
+          L = leaflet.default;
 
-        // 修復 Leaflet 預設圖示問題
-        delete (L.Icon.Default.prototype as typeof L.Icon.Default.prototype & { _getIconUrl?: unknown })._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl:
-            'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        });
+          // 修復 Leaflet 預設圖示問題
+          delete (
+            L.Icon.Default.prototype as typeof L.Icon.Default.prototype & { _getIconUrl?: unknown }
+          )._getIconUrl;
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl:
+              'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+            shadowUrl:
+              'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+          });
+        } catch (error) {
+          console.error('載入 Leaflet 失敗:', error);
+          // 即使載入失敗，也設定 L 為空物件以避免無限載入
+          L = {} as typeof import('leaflet');
+        }
       }
     };
 
     loadLeaflet();
   }, []);
 
-  if (!isClient || !L) {
+  if (!L || Object.keys(L).length === 0) {
     return (
       <div className={className}>
         <div className="w-full h-full flex items-center justify-center bg-gray-100">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p className="text-gray-600">載入地圖中...</p>
+            <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <p className="text-gray-600">載入地圖庫中...</p>
+            <p className="text-xs text-gray-500 mt-1">若持續載入請重新整理頁面</p>
           </div>
         </div>
       </div>

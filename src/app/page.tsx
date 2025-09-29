@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { ReportButtons } from '@/components/ReportButtons';
 import { CenterLockButton } from '@/components/ui/center-lock-button';
 import { Loading } from '@/components/ui/loading';
+import { PermissionModal } from '@/components/ui/permission-modal';
+import { WelcomeButtons } from '@/components/ui/welcome-buttons';
 import { getCurrentPosition, watchPosition, clearWatch } from '@/lib/geolocation';
 import { isWithinBounds } from '@/lib/coordinates';
 import { Location, ReportData } from '@/types/map';
@@ -26,260 +28,275 @@ const DynamicMap = dynamic(
   }
 );
 
+// 應用程式狀態類型
+type AppState = 'ready' | 'requesting' | 'granted' | 'denied' | 'unavailable';
+
 export default function Home() {
+  // 核心狀態
+  const [appState, setAppState] = useState<AppState>('ready');
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [lockCenter, setLockCenter] = useState(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
-  const [locationStatus, setLocationStatus] = useState<
-    'requesting' | 'granted' | 'denied' | 'unavailable'
-  >('requesting');
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+
+  // 引用狀態
+  const watchIdRef = useRef<number | null>(null);
   const isWithinBoundsRef = useRef<boolean | null>(null);
+  const mapRef = useRef<MapRef>(null);
+  const currentAreaConfigRef = useRef(getDefaultAreaConfig());
+
+  // 區域配置狀態
   const [currentAreaConfig, setCurrentAreaConfig] = useState(() => getDefaultAreaConfig());
   const [currentAreaMode, setCurrentAreaMode] = useState<AreaMode>(
     () => getDefaultAreaConfig().name as AreaMode
   );
+
+  // UI 狀態
   const [isClient, setIsClient] = useState(false);
   const [canZoomIn, setCanZoomIn] = useState(true);
   const [canZoomOut, setCanZoomOut] = useState(true);
-  const mapRef = useRef<MapRef>(null);
 
   // 客戶端初始化
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // 切換區域函數
-  const switchArea = (mode: AreaMode) => {
-    const newConfig = AVAILABLE_AREAS[mode];
-    setCurrentAreaConfig(newConfig);
-    setCurrentAreaMode(mode);
-
-    toast.info(`已切換到${newConfig.displayName}`);
-
-    // 重新初始化位置檢查
-    isWithinBoundsRef.current = null;
-    if (userLocation) {
-      const withinBounds = isWithinBounds(userLocation, newConfig);
-      isWithinBoundsRef.current = withinBounds;
-    }
-  };
-
-  // 初始化 GPS 定位
+  // 同步區域配置到 ref
   useEffect(() => {
-    const initLocation = async () => {
-      setLocationStatus('requesting');
+    currentAreaConfigRef.current = currentAreaConfig;
+  }, [currentAreaConfig]);
+
+  // 初始化位置監控
+  const initLocationTracking = useCallback(async () => {
+    try {
+      setAppState('requesting');
       toast.info('正在請求位置權限...');
 
-      try {
-        const location = await getCurrentPosition();
-        setUserLocation(location);
-        setLocationStatus('granted');
-
-        const withinBounds = isWithinBounds(location, currentAreaConfig);
-        isWithinBoundsRef.current = withinBounds;
-
-        if (!withinBounds) {
-          toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
-        } else {
-          toast.success('已取得您的位置');
-        }
-
-        // 開始監控位置變化
-        const id = watchPosition(
-          (newLocation) => {
-            setUserLocation(newLocation);
-
-            const newWithinBounds = isWithinBounds(newLocation, currentAreaConfig);
-
-            // 只在邊界狀態改變時顯示 toast
-            if (
-              isWithinBoundsRef.current !== null &&
-              isWithinBoundsRef.current !== newWithinBounds
-            ) {
-              if (!newWithinBounds) {
-                toast.warning(`您已離開${currentAreaConfig.displayName}範圍`);
-              } else {
-                toast.success(`歡迎回到${currentAreaConfig.displayName}範圍`);
-              }
-            }
-
-            isWithinBoundsRef.current = newWithinBounds;
-          },
-          (error) => {
-            if (error.code === 1) {
-              setLocationStatus('denied');
-            } else {
-              setLocationStatus('unavailable');
-            }
-            toast.error(error.message);
-          }
-        );
-
-        if (id !== null) {
-          setWatchId(id);
-        }
-      } catch (error) {
-        console.error('位置錯誤詳情:', error);
-
-        let errorMessage = '未知錯誤';
-        let errorCode = 0;
-
-        if (error && typeof error === 'object') {
-          if ('message' in error && typeof error.message === 'string') {
-            errorMessage = error.message;
-          }
-          if ('code' in error && typeof error.code === 'number') {
-            errorCode = error.code;
-          }
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-
-
-        if (errorCode === 1) {
-          setLocationStatus('denied');
-        } else if (errorCode === 2 || errorCode === 3) {
-          setLocationStatus('unavailable');
-        } else {
-          setLocationStatus('unavailable');
-        }
-
-        toast.error(errorMessage);
-      }
-    };
-
-    initLocation();
-
-    // 清理函數
-    return () => {
-      if (watchId !== null) {
-        clearWatch(watchId);
-      }
-    };
-  }, [currentAreaConfig, watchId]);
-
-  // 處理回報
-  const handleReport = async (state: 0 | 1) => {
-    if (!userLocation) {
-      toast.error('無法取得位置資訊');
-      return;
-    }
-
-    if (!isWithinBounds(userLocation, currentAreaConfig)) {
-      toast.error(`您不在${currentAreaConfig.displayName}範圍內，無法進行回報`);
-      return;
-    }
-
-    const reportData: ReportData = {
-      lat: userLocation.lat,
-      lon: userLocation.lon,
-      state,
-    };
-
-    try {
-      // 這裡之後會連接到 API
-      console.log('回報資料:', reportData);
-
-      // 模擬 API 呼叫
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast.success(state === 1 ? '已回報有淤泥' : '已回報清除完成');
-    } catch (error) {
-      toast.error('回報失敗，請重試');
-      console.error('Report error:', error);
-    }
-  };
-
-  // 切換鎖定中心模式
-  const toggleLockCenter = () => {
-    setLockCenter(!lockCenter);
-    toast.info(lockCenter ? '已關閉跟隨模式' : '已開啟跟隨模式');
-  };
-
-  // 處理地圖點擊
-  const handleMapClick = (location: Location) => {
-    console.log('地圖點擊位置:', location);
-  };
-
-  // 處理縮放狀態變化
-  const handleZoomChange = (zoom: number, canZoomInNew: boolean, canZoomOutNew: boolean) => {
-    setCanZoomIn(canZoomInNew);
-    setCanZoomOut(canZoomOutNew);
-  };
-
-  // 處理縮放按鈕點擊
-  const handleZoomIn = () => {
-    mapRef.current?.zoomIn();
-  };
-
-  const handleZoomOut = () => {
-    mapRef.current?.zoomOut();
-  };
-
-  // 重新請求位置權限
-  const requestLocationPermission = async () => {
-    setLocationStatus('requesting');
-    toast.info('正在重新請求位置權限...');
-
-    try {
       const location = await getCurrentPosition();
       setUserLocation(location);
-      setLocationStatus('granted');
+      setAppState('granted');
 
-      const withinBounds = isWithinBounds(location, currentAreaConfig);
+      // 使用 ref 中的當前區域配置
+      const areaConfig = currentAreaConfigRef.current;
+      const withinBounds = isWithinBounds(location, areaConfig);
       isWithinBoundsRef.current = withinBounds;
 
       if (!withinBounds) {
-        toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
+        toast.warning(`您不在${areaConfig.displayName}範圍內，某些功能可能無法使用`);
       } else {
         toast.success('已取得您的位置');
       }
-    } catch (error) {
-      console.error('重新請求位置錯誤詳情:', error);
 
-      let errorMessage = '未知錯誤';
-      let errorCode = 0;
+      // 開始監控位置變化
+      const id = watchPosition(
+        (newLocation) => {
+          setUserLocation(newLocation);
 
-      if (error && typeof error === 'object') {
-        if ('message' in error && typeof error.message === 'string') {
-          errorMessage = error.message;
+          // 使用當前的區域配置
+          const currentAreaConfig = currentAreaConfigRef.current;
+          const newWithinBounds = isWithinBounds(newLocation, currentAreaConfig);
+
+          // 只在邊界狀態改變時顯示 toast
+          if (isWithinBoundsRef.current !== null && isWithinBoundsRef.current !== newWithinBounds) {
+            if (!newWithinBounds) {
+              toast.warning(`您已離開${currentAreaConfig.displayName}範圍`);
+            } else {
+              toast.success(`歡迎回到${currentAreaConfig.displayName}範圍`);
+            }
+          }
+
+          isWithinBoundsRef.current = newWithinBounds;
+        },
+        (error) => {
+          if (error.code === 1) {
+            setAppState('denied');
+          } else {
+            setAppState('unavailable');
+          }
+          toast.error(error.message);
         }
-        if ('code' in error && typeof error.code === 'number') {
-          errorCode = error.code;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+      );
+
+      if (id !== null) {
+        watchIdRef.current = id;
       }
+    } catch (error) {
+      console.error('位置錯誤詳情:', error);
 
+      let errorCode = 0;
+      if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'number') {
+        errorCode = error.code;
+      }
 
       if (errorCode === 1) {
-        setLocationStatus('denied');
-      } else if (errorCode === 2 || errorCode === 3) {
-        setLocationStatus('unavailable');
+        setAppState('denied');
       } else {
-        setLocationStatus('unavailable');
+        setAppState('unavailable');
       }
 
+      const errorMessage = error instanceof Error ? error.message : '位置服務不可用';
       toast.error(errorMessage);
     }
-  };
+  }, []);
 
-  return (
-    <main className="relative w-full h-screen overflow-hidden">
-      {/* 地圖容器 */}
-      <DynamicMap
-        ref={mapRef}
-        center={lockCenter && userLocation ? userLocation : currentAreaConfig.center}
-        userLocation={userLocation || undefined}
-        lockCenter={lockCenter}
-        onMapClick={handleMapClick}
-        areaConfig={currentAreaConfig}
-        onZoomChange={handleZoomChange}
-        className="w-full h-screen"
-      />
+  // 自動 GPS 檢測
+  useEffect(() => {
+    if (!isClient) return;
 
-      {/* 區域狀態指示器和切換 - 只在客戶端渲染 */}
-      {isClient && (
+    const tryAutoLocation = async () => {
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        try {
+          // 檢查權限狀態
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+
+          if (permission.state === 'granted') {
+            // 已有權限，直接初始化位置追蹤
+            initLocationTracking();
+          }
+          // 如果是 'denied' 或 'prompt'，保持在 'ready' 狀態等待使用者操作
+        } catch (error) {
+          // 權限 API 不支援或其他錯誤，保持在 'ready' 狀態
+          console.log('無法檢查地理位置權限:', error);
+        }
+      }
+    };
+
+    tryAutoLocation();
+  }, [isClient, initLocationTracking]);
+
+  // 切換區域函數
+  const switchArea = useCallback(
+    (mode: AreaMode) => {
+      const newConfig = AVAILABLE_AREAS[mode];
+      setCurrentAreaConfig(newConfig);
+      setCurrentAreaMode(mode);
+
+      toast.info(`已切換到${newConfig.displayName}`);
+
+      // 重新檢查位置邊界
+      if (userLocation) {
+        const withinBounds = isWithinBounds(userLocation, newConfig);
+        isWithinBoundsRef.current = withinBounds;
+      }
+
+      // 確保 Modal 狀態不受區域切換影響
+      // Modal 狀態由使用者操作控制，不因區域切換而重置
+    },
+    [userLocation]
+  );
+
+  // 清理位置監控
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, []);
+
+  // Modal 處理函數
+  const handleJoinClick = useCallback(() => {
+    setIsPermissionModalOpen(true);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setIsPermissionModalOpen(false);
+  }, []);
+
+  const handleRequestPermission = useCallback(() => {
+    setIsPermissionModalOpen(false);
+    initLocationTracking();
+  }, [initLocationTracking]);
+
+  // 處理回報
+  const handleReport = useCallback(
+    async (state: 0 | 1) => {
+      if (!userLocation) {
+        toast.error('無法取得位置資訊');
+        return;
+      }
+
+      // 使用 ref 中的當前區域配置
+      const areaConfig = currentAreaConfigRef.current;
+      if (!isWithinBounds(userLocation, areaConfig)) {
+        toast.error(`您不在${areaConfig.displayName}範圍內，無法進行回報`);
+        return;
+      }
+
+      const reportData: ReportData = {
+        lat: userLocation.lat,
+        lon: userLocation.lon,
+        state,
+      };
+
+      try {
+        // 這裡之後會連接到 API
+        console.log('回報資料:', reportData);
+
+        // 模擬 API 呼叫
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        toast.success(state === 1 ? '已回報有淤泥' : '已回報清除完成');
+      } catch (error) {
+        toast.error('回報失敗，請重試');
+        console.error('Report error:', error);
+      }
+    },
+    [userLocation]
+  ); // 移除 currentAreaConfig 依賴
+
+  // 切換鎖定中心模式
+  const toggleLockCenter = useCallback(() => {
+    setLockCenter(!lockCenter);
+    toast.info(lockCenter ? '已關閉跟隨模式' : '已開啟跟隨模式');
+  }, [lockCenter]);
+
+  // 處理地圖點擊
+  const handleMapClick = useCallback((location: Location) => {
+    console.log('地圖點擊位置:', location);
+  }, []);
+
+  // 處理縮放狀態變化
+  const handleZoomChange = useCallback(
+    (zoom: number, canZoomInNew: boolean, canZoomOutNew: boolean) => {
+      setCanZoomIn(canZoomInNew);
+      setCanZoomOut(canZoomOutNew);
+    },
+    []
+  );
+
+  // 處理縮放按鈕點擊
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
+
+  // 重新請求位置權限
+  const requestLocationPermission = useCallback(() => {
+    initLocationTracking();
+  }, [initLocationTracking]);
+
+  // 渲染不同狀態的內容
+  const renderContent = () => {
+    // 統一的地圖和 UI 佈局
+    return (
+      <div className="relative w-full h-screen overflow-hidden">
+        {/* 地圖容器 - 在所有狀態下都顯示 */}
+        <DynamicMap
+          ref={mapRef}
+          center={lockCenter && userLocation ? userLocation : currentAreaConfig.center}
+          userLocation={userLocation || undefined}
+          lockCenter={lockCenter}
+          onMapClick={handleMapClick}
+          areaConfig={currentAreaConfig}
+          onZoomChange={handleZoomChange}
+          className="w-full h-screen"
+        />
+
+        {/* 區域狀態指示器和切換 */}
         <div className="fixed top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-3 border border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="text-sm">
@@ -303,72 +320,122 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
 
-      {/* 右上角按鈕組 */}
-      <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2">
-        {/* 跟隨按鈕 */}
-        <CenterLockButton isLocked={lockCenter} onToggle={toggleLockCenter} className="relative" />
+        {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
+        {appState !== 'requesting' && (
+          <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2">
+            {/* 跟隨按鈕 */}
+            <CenterLockButton
+              isLocked={lockCenter}
+              onToggle={toggleLockCenter}
+              className="relative"
+            />
 
-        {/* 縮放按鈕 */}
-        <ZoomButtons
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          canZoomIn={canZoomIn}
-          canZoomOut={canZoomOut}
-        />
+            {/* 縮放按鈕 */}
+            <ZoomButtons
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              canZoomIn={canZoomIn}
+              canZoomOut={canZoomOut}
+            />
+          </div>
+        )}
+
+        {/* Bottom Bar - 根據狀態顯示不同內容 */}
+        {(appState === 'ready' || appState === 'denied' || appState === 'unavailable') && (
+          <WelcomeButtons onJoin={handleJoinClick} areaName={currentAreaConfig.displayName} />
+        )}
+
+        {appState === 'granted' && userLocation && (
+          <ReportButtons
+            userLocation={userLocation}
+            onReport={handleReport}
+            disabled={!isWithinBounds(userLocation, currentAreaConfig)}
+          />
+        )}
+
+        {/* 狀態提示 */}
+        {appState === 'denied' && (
+          <div className="fixed top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[1000]">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">位置權限被拒絕</p>
+                  <p className="text-xs">需要位置權限以提供精確回報</p>
+                </div>
+                <button
+                  onClick={requestLocationPermission}
+                  className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                >
+                  重新授權
+                </button>
+              </div>
+              <div className="text-xs space-y-1 border-t border-red-300 pt-2">
+                <p className="font-medium">如何開啟位置權限：</p>
+                <ul className="list-disc list-inside space-y-0.5 ml-2">
+                  <li>點擊瀏覽器網址列旁的🔒圖示</li>
+                  <li>將「位置」設定為「允許」</li>
+                  <li>重新載入頁面</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {appState === 'requesting' && (
+          <div className="fixed top-4 left-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-[1000]">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm">正在嘗試獲取位置...</p>
+              </div>
+              <div className="text-xs text-blue-600">
+                <p>系統正在嘗試高精度定位，如果失敗會自動切換到網路定位</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {appState === 'unavailable' && (
+          <div className="fixed top-4 left-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-[1000]">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">無法取得位置資訊</p>
+                  <p className="text-xs">位置服務暫時不可用</p>
+                </div>
+                <button
+                  onClick={requestLocationPermission}
+                  className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
+                >
+                  重試
+                </button>
+              </div>
+              <div className="text-xs space-y-1 border-t border-yellow-300 pt-2">
+                <p className="font-medium">可能的解決方案：</p>
+                <ul className="list-disc list-inside space-y-0.5 ml-2">
+                  <li>確認裝置已開啟定位服務</li>
+                  <li>移至開放空間或靠近窗邊</li>
+                  <li>檢查網路連接是否正常</li>
+                  <li>重新載入頁面並再次嘗試</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+    );
+  };
 
-      {/* 回報按鈕 */}
-      <ReportButtons
-        userLocation={userLocation || undefined}
-        onReport={handleReport}
-        disabled={!userLocation || !isWithinBounds(userLocation, currentAreaConfig)}
+  return (
+    <main className="relative w-full h-screen overflow-hidden">
+      {renderContent()}
+      <PermissionModal
+        isOpen={isPermissionModalOpen}
+        onClose={handleModalClose}
+        onRequestPermission={handleRequestPermission}
+        areaName={currentAreaConfig.displayName}
       />
-
-      {/* 位置狀態提示 */}
-      {locationStatus === 'denied' && (
-        <div className="fixed top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[1000]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">位置權限被拒絕</p>
-              <p className="text-xs">請允許位置權限以使用完整功能</p>
-            </div>
-            <button
-              onClick={requestLocationPermission}
-              className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-            >
-              重新授權
-            </button>
-          </div>
-        </div>
-      )}
-
-      {locationStatus === 'requesting' && (
-        <div className="fixed top-4 left-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-[1000]">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm">正在請求位置權限...</p>
-          </div>
-        </div>
-      )}
-
-      {locationStatus === 'unavailable' && (
-        <div className="fixed top-4 left-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-[1000]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">無法取得位置</p>
-              <p className="text-xs">請檢查裝置定位設定</p>
-            </div>
-            <button
-              onClick={requestLocationPermission}
-              className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
-            >
-              重試
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

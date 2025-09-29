@@ -46,7 +46,7 @@ assignees: ''
 - [ ] docs/tech-spec.md 技術規格 | docs/tech-spec.md technical specification
 - [ ] 現有的 Issues | Existing issues
 - [ ] 程式碼註解 | Code comments
-- [ ] 其他文件 | Other documentation: ****\_\_\_****
+- [ ] 其他文件 | Other documentation: \***\*\_\_\_\*\***
 
 ## 環境資訊 | Environment Information
 
@@ -68,7 +68,7 @@ assignees: ''
 - [ ] 概念解釋 | Conceptual explanation
 - [ ] 最佳實踐建議 | Best practice recommendations
 - [ ] 資源連結 | Resource links
-- [ ] 其他 | Other: ****\_\_\_****
+- [ ] 其他 | Other: \***\*\_\_\_\*\***
 
 ## 緊急程度 | Urgency Level
 

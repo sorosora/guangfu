@@ -53,7 +53,7 @@ assignees: ''
 - [ ] 資料分析功能 | Data analysis feature
 - [ ] 管理工具 | Administrative tool
 - [ ] 整合功能 | Integration feature
-- [ ] 其他 | Other: ****\_\_\_****
+- [ ] 其他 | Other: \***\*\_\_\_\*\***
 
 ## 優先級 | Priority
 
@@ -93,7 +93,7 @@ assignees: ''
 - [ ] 回報準確度提升 | Improved reporting accuracy
 - [ ] 系統效能改善 | System performance improvement
 - [ ] 使用者滿意度 | User satisfaction
-- [ ] 其他指標 | Other metrics: ****\_\_\_****
+- [ ] 其他指標 | Other metrics: \***\*\_\_\_\*\***
 
 ## 國際化考量 | Internationalization Considerations
 
