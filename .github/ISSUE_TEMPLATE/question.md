@@ -42,20 +42,20 @@ assignees: ''
 ### 您查過哪些資源？ | What resources have you checked?
 
 - [ ] README 文件 | README documentation
-- [ ] CLAUDE.md 專案指引 | CLAUDE.md project guide  
+- [ ] CLAUDE.md 專案指引 | CLAUDE.md project guide
 - [ ] docs/tech-spec.md 技術規格 | docs/tech-spec.md technical specification
 - [ ] 現有的 Issues | Existing issues
 - [ ] 程式碼註解 | Code comments
-- [ ] 其他文件 | Other documentation: ___________
+- [ ] 其他文件 | Other documentation: ****\_\_\_****
 
 ## 環境資訊 | Environment Information
 
 **如果問題與技術相關，請提供環境資訊 | If the question is technical, please provide environment information:**
 
-- 作業系統 | OS: 
-- 瀏覽器 | Browser: 
-- Node.js 版本 | Node.js version: 
-- npm/yarn 版本 | npm/yarn version: 
+- 作業系統 | OS:
+- 瀏覽器 | Browser:
+- Node.js 版本 | Node.js version:
+- npm/yarn 版本 | npm/yarn version:
 
 ## 嘗試過的解決方案 | Attempted Solutions
 
@@ -68,7 +68,7 @@ assignees: ''
 - [ ] 概念解釋 | Conceptual explanation
 - [ ] 最佳實踐建議 | Best practice recommendations
 - [ ] 資源連結 | Resource links
-- [ ] 其他 | Other: ___________
+- [ ] 其他 | Other: ****\_\_\_****
 
 ## 緊急程度 | Urgency Level
 

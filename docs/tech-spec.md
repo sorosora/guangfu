@@ -41,25 +41,25 @@ graph TD
         A[Next.js App @ Vercel] --> B[API: /api/report]
         A --> G[Cloudflare CDN]
     end
-    
+
     subgraph Vercel
         B --> C[Supabase DB]
         B --> D[Upstash Redis]
     end
-    
+
     subgraph GitHub
         E[Actions Schedule] --> F[Python Script]
     end
-    
+
     subgraph "Python Script (GH Runner)"
         F --> D
         F --> R2[R2 Storage]
     end
-    
+
     subgraph Cloudflare
         R2 --> G
     end
-    
+
     A -.->|1. 回報災情| B
     B -.->|2. 寫入原始紀錄| C
     B -.->|3. 更新即時分數| D
@@ -98,10 +98,12 @@ graph TD
 ### 4.2 使用者介面與核心功能
 
 #### 1. 地圖主視圖
+
 - 地圖初始化時，應以 3.1 節定義的地理範圍為中心和主要視野
 - 地圖上疊加由 Cloudflare R2 提供的自訂圖磚 (Tile Layer)
 
 #### 2. 鎖定中心模式 (Lock to Center)
+
 - 介面上需提供一個使用 shadcn/ui Button (設定為 `variant="outline"` 和 `size="icon"`) 和 lucide-react 圖示（例如 navigation 或 locate-fixed）的可切換按鈕
 - **關閉時 (預設)：** 使用者可自由拖動和縮放地圖
 - **啟動時：** 地圖視野會以使用者的 GPS 位置為中心。當使用者移動時，地圖會跟隨移動，始終保持使用者的位置標記在畫面正中央。此模式下，使用者不可手動拖動地圖
@@ -187,22 +189,27 @@ graph TD
 ### 核心邏輯：
 
 #### 1. 驗證請求 (Validation)
+
 檢查請求 Body 是否包含 `lat`, `lon`, `state` 且格式正確。
 
 #### 2. 座標轉換與邊界檢查 (Coordinate Transformation & Boundary Check)
+
 - 將接收到的 `lat`, `lon` 轉換為基於 3.1 節地圖範圍的網格座標 (x, y)
 - 檢查 (x, y) 是否在 (0..799, 0..599) 的有效範圍內。若超出範圍則拒絕請求
 
 #### 3. 執行範圍效應更新 (Area-of-Effect Update)
+
 - 確定中心點 (x, y) 及周圍8個鄰近點的座標
 - 使用 Redis Pipeline，一次性讀取這最多9個網格點的現有分數資料
 - 在後端計算每個點的新分數，應用 5.3 和 5.4 節的演算法邏輯
 - 使用另一個 Redis Pipeline，一次性將這9個點的新分數寫回
 
 #### 4. 儲存原始紀錄 (Log Original Report)
+
 將本次回報的原始資料（包含精確經緯度、中心網格座標、狀態和時間戳）非同步存入 Supabase 的 reports 資料表中。此操作不應阻塞對使用者的回應。
 
 #### 5. 回應 (Response)
+
 - 成功處理後，向前端返回 200 OK 及成功訊息
 - 若有任何錯誤，返回對應的 HTTP 錯誤碼及錯誤訊息
 
@@ -212,14 +219,14 @@ graph TD
 
 **Table: reports**
 
-| 欄位 | 型別 | 說明 |
-|------|------|------|
-| id | bigint | Primary Key |
-| created_at | timestamp with time zone | default now() |
-| grid_x | integer | 網格 X 座標 |
-| grid_y | integer | 網格 Y 座標 |
-| reported_state | smallint | 0 或 1 |
-| location | geography(Point, 4326) | PostGIS 型別 |
+| 欄位           | 型別                     | 說明          |
+| -------------- | ------------------------ | ------------- |
+| id             | bigint                   | Primary Key   |
+| created_at     | timestamp with time zone | default now() |
+| grid_x         | integer                  | 網格 X 座標   |
+| grid_y         | integer                  | 網格 Y 座標   |
+| reported_state | smallint                 | 0 或 1        |
+| location       | geography(Point, 4326)   | PostGIS 型別  |
 
 **索引 (Indexing):** 建議在 `location` 欄位上建立地理空間索引 (GIST)，以加速未來可能的地理位置查詢。
 

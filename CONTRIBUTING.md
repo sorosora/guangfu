@@ -82,17 +82,20 @@ We welcome suggestions for new features! Please create an issue explaining:
 ### 設定步驟 | Setup Steps
 
 1. **複製專案 | Clone the repository**:
+
    ```bash
    git clone https://github.com/your-username/guangfu-cleanup-map.git
    cd guangfu-cleanup-map
    ```
 
 2. **安裝依賴 | Install dependencies**:
+
    ```bash
    yarn
    ```
 
 3. **設定環境變數 | Set up environment variables**:
+
    ```bash
    cp .env.example .env.local
    # 編輯 .env.local 並填入必要的值 | Edit .env.local and fill in required values
@@ -104,6 +107,7 @@ We welcome suggestions for new features! Please create an issue explaining:
    - 📋 參考 `.env.local.example` 獲取本地開發設定建議 | Refer to `.env.local.example` for local development setup tips
 
 4. **啟動開發服務器 | Start development server**:
+
    ```bash
    yarn dev
    ```
@@ -132,6 +136,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) specificatio
 格式 | Format: `<type>[optional scope]: <description>`
 
 **類型 | Types:**
+
 - `feat`: 新功能 | new feature
 - `fix`: 錯誤修復 | bug fix
 - `docs`: 文件變更 | documentation changes
@@ -141,6 +146,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) specificatio
 - `chore`: 建置或工具變更 | build or tool changes
 
 **範例 | Examples:**
+
 ```
 feat(map): 新增 GPS 定位功能
 fix(api): 修復座標轉換邊界檢查錯誤
@@ -164,11 +170,13 @@ chore(deps): 更新依賴套件版本
 ### 開發環境設定 | Development Environment Setup
 
 #### 本地開發環境變數 | Local Development Environment Variables
+
 - 複製 `.env.example` 為 `.env.local`
 - 使用開發專用的 API 金鑰和資料庫
 - 確保 `.env.local` 已被 `.gitignore` 忽略
 
 #### 測試環境設定 | Testing Environment Setup
+
 - 使用測試專用的 Supabase 專案
 - 使用獨立的 Redis 資料庫
 - 設定測試專用的 R2 儲存桶
@@ -176,6 +184,7 @@ chore(deps): 更新依賴套件版本
 ### 環境變數安全檢查清單 | Environment Variables Security Checklist
 
 **提交 PR 前請確認 | Before submitting PR, please confirm:**
+
 - [ ] 沒有在程式碼中硬編碼 API 金鑰 | No API keys are hardcoded in the code
 - [ ] 所有敏感變數都使用環境變數 | All sensitive variables use environment variables
 - [ ] `.env.local` 沒有被提交到 Git | `.env.local` is not committed to Git
@@ -185,10 +194,12 @@ chore(deps): 更新依賴套件版本
 ### 生產環境變數配置 | Production Environment Variables Configuration
 
 **Vercel 部署時需設定 | Required for Vercel deployment:**
+
 - 前端公開變數 (以 `NEXT_PUBLIC_` 開頭)
 - 後端 API 金鑰 (Supabase, Upstash)
 
 **GitHub Actions 需要的 Secrets | Required GitHub Secrets:**
+
 - Redis 連線設定 (用於圖磚生成)
 - Cloudflare R2 設定 (用於檔案上傳)
 

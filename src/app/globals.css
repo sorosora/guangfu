@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -118,5 +118,26 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Leaflet 地圖樣式修正 */
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* 安全區域支援 */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 手機觸控改進 */
+@media (max-width: 768px) {
+  .leaflet-control-container {
+    pointer-events: none;
+  }
+
+  .leaflet-control {
+    pointer-events: auto;
   }
 }

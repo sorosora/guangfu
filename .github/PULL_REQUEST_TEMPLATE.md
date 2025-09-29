@@ -31,7 +31,7 @@
 ### 測試覆蓋 | Test Coverage
 
 - [ ] 單元測試 | Unit tests
-- [ ] 整合測試 | Integration tests  
+- [ ] 整合測試 | Integration tests
 - [ ] E2E 測試 | End-to-end tests
 - [ ] 手動測試 | Manual testing
 - [ ] 無需測試 | No testing needed
@@ -41,18 +41,21 @@
 **已在以下環境測試 | Tested on the following environments:**
 
 #### 瀏覽器 | Browsers
+
 - [ ] Chrome
-- [ ] Firefox  
+- [ ] Firefox
 - [ ] Safari
 - [ ] Edge
 - [ ] 行動瀏覽器 | Mobile browsers
 
 #### 裝置 | Devices
+
 - [ ] 桌面電腦 | Desktop
 - [ ] 行動裝置 | Mobile devices
 - [ ] 平板 | Tablets
 
 #### 作業系統 | Operating Systems
+
 - [ ] Windows
 - [ ] macOS
 - [ ] Linux
@@ -64,7 +67,7 @@
 **這個變更對災難救援工作的影響 | Impact of this change on disaster relief operations:**
 
 - [ ] 🚨 緊急修復 | Critical fix - 解決影響救援工作的問題 | Fixes issues affecting rescue operations
-- [ ] ⚡ 重要改善 | Important improvement - 提升救援效率 | Improves rescue efficiency  
+- [ ] ⚡ 重要改善 | Important improvement - 提升救援效率 | Improves rescue efficiency
 - [ ] 📈 功能增強 | Feature enhancement - 新增有用功能 | Adds useful functionality
 - [ ] 🔧 技術改善 | Technical improvement - 內部優化 | Internal optimization
 - [ ] 📝 文件更新 | Documentation update - 不影響核心功能 | No impact on core functionality
@@ -102,6 +105,7 @@
 - [ ] ⚠️ 需要關注的效能影響 | Performance impact requiring attention
 
 **效能測試結果 | Performance test results:**
+
 ```
 在此提供效能測試數據 | Provide performance test data here
 ```
@@ -129,16 +133,19 @@
 **部署此 PR 時需要注意的事項 | Notes for deploying this PR:**
 
 ### 環境變數 | Environment Variables
+
 - [ ] 無新的環境變數 | No new environment variables
 - [ ] 需要新增環境變數 | New environment variables required
 - [ ] 需要更新現有環境變數 | Existing environment variables need updates
 
 ### 資料庫變更 | Database Changes
+
 - [ ] 無資料庫變更 | No database changes
 - [ ] 需要執行資料庫遷移 | Database migration required
 - [ ] 需要手動資料處理 | Manual data processing required
 
 ### 依賴套件 | Dependencies
+
 - [ ] 無新依賴 | No new dependencies
 - [ ] 新增依賴套件 | New dependencies added
 - [ ] 更新依賴套件 | Dependencies updated
@@ -156,23 +163,27 @@
 請確認您已經完成以下步驟 | Please confirm you have completed the following:
 
 ### 程式碼品質 | Code Quality
+
 - [ ] 程式碼遵循專案規範 | Code follows project standards
 - [ ] 已執行 `npm run lint` 且無錯誤 | Ran `npm run lint` with no errors
 - [ ] 已執行 `npm run type-check` 且無錯誤 | Ran `npm run type-check` with no errors
 - [ ] 已執行 `npm run test` 且測試通過 | Ran `npm run test` and tests pass
 
 ### 提交規範 | Commit Standards
+
 - [ ] 提交訊息遵循 Conventional Commits 規範 | Commit messages follow Conventional Commits
 - [ ] 提交歷史清晰且有意義 | Commit history is clean and meaningful
 - [ ] 分支名稱符合命名規範 | Branch name follows naming convention
 
 ### 審查準備 | Review Readiness
+
 - [ ] PR 描述清楚完整 | PR description is clear and complete
 - [ ] 已自我審查程式碼 | Self-reviewed the code
 - [ ] 已解決所有 merge conflicts | Resolved all merge conflicts
 - [ ] 已指派適當的審查者 | Assigned appropriate reviewers
 
 ### 特殊考量 | Special Considerations
+
 - [ ] 考慮了行動裝置相容性 | Considered mobile device compatibility
 - [ ] 考慮了網路連線不穩定的情況 | Considered unstable network conditions
 - [ ] 考慮了災難現場的使用環境 | Considered disaster site usage environment

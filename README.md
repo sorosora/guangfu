@@ -11,21 +11,25 @@ An interactive real-time map platform for post-typhoon cleanup efforts in Guangf
 ## ✨ 核心功能 | Key Features
 
 ### 🗺️ 精準範圍地圖可視化
+
 - 4km × 3km 範圍內的狀態網格顯示
 - 5公尺精度的網格系統
 - 即時狀態更新
 
 ### 📍 GPS 現場回報
+
 - 使用者在物理範圍內回報淤泥狀態
 - 位置驗證機制
 - 一鍵式操作介面
 
 ### 🎯 鎖定中心模式
+
 - 地圖跟隨使用者位置移動
 - 自動定位功能
 - 智慧視野調整
 
 ### 🧠 信任演算法
+
 - 整合範圍效應的自動狀態判斷
 - 多使用者回報信譽系統
 - 防止惡意回報機制
@@ -33,21 +37,25 @@ An interactive real-time map platform for post-typhoon cleanup efforts in Guangf
 ---
 
 ### 🗺️ Precision Area Map Visualization
+
 - Status grid display within 4km × 3km area
 - 5-meter precision grid system
 - Real-time status updates
 
 ### 📍 GPS On-Site Reporting
+
 - Users report sediment status within physical range
 - Location verification mechanism
 - One-click operation interface
 
 ### 🎯 Lock-to-Center Mode
+
 - Map follows user location movement
 - Automatic positioning
 - Smart viewport adjustment
 
 ### 🧠 Trust Algorithm
+
 - Automatic status determination with area-of-effect integration
 - Multi-user reporting reputation system
 - Anti-malicious reporting mechanism
@@ -86,6 +94,7 @@ yarn dev
 #### 🔧 本地開發設定 | Local Development Setup
 
 1. **複製環境變數範本 | Copy environment template:**
+
    ```bash
    cp .env.example .env.local
    ```
@@ -93,6 +102,7 @@ yarn dev
 2. **編輯 `.env.local` 並填入以下變數 | Edit `.env.local` with the following variables:**
 
 **🌐 前端公開變數 | Frontend Public Variables**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -100,6 +110,7 @@ NEXT_PUBLIC_TILES_BASE_URL=https://tiles.yourdomain.com
 ```
 
 **🔒 後端私密變數 | Backend Private Variables**
+
 ```env
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
@@ -112,14 +123,16 @@ CLOUDFLARE_R2_BUCKET_NAME=your_bucket_name
 #### ☁️ 生產環境部署 | Production Deployment
 
 **Vercel 環境變數設定 | Vercel Environment Variables:**
+
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` 
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_TILES_BASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
 **GitHub Secrets 設定 (用於 GitHub Actions) | GitHub Secrets (for GitHub Actions):**
+
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 - `CLOUDFLARE_R2_ACCESS_KEY_ID`
@@ -136,6 +149,7 @@ CLOUDFLARE_R2_BUCKET_NAME=your_bucket_name
 ## 🏗️ 技術架構 | Tech Stack
 
 ### 前端 | Frontend
+
 - **框架 | Framework**: Next.js 14 (App Router)
 - **UI 庫 | UI Library**: shadcn/ui
 - **樣式 | Styling**: Tailwind CSS
@@ -144,6 +158,7 @@ CLOUDFLARE_R2_BUCKET_NAME=your_bucket_name
 - **語言 | Language**: TypeScript
 
 ### 後端 | Backend
+
 - **部署平台 | Hosting**: Vercel
 - **資料庫 | Database**: Supabase (PostgreSQL)
 - **快取 | Cache**: Upstash (Redis)
@@ -151,6 +166,7 @@ CLOUDFLARE_R2_BUCKET_NAME=your_bucket_name
 - **檔案儲存 | File Storage**: Cloudflare R2
 
 ### 開發工具 | Development Tools
+
 - **程式碼品質 | Code Quality**: ESLint + Prettier
 - **型別檢查 | Type Checking**: TypeScript
 - **版本控制 | Version Control**: Git + GitHub Flow
@@ -177,12 +193,14 @@ yarn test:watch      # 監看模式測試 | Run tests in watch mode
 ## 📊 地圖規格 | Map Specifications
 
 ### 地理範圍 | Geographic Area (WGS 84)
+
 - **西北角 | Northwest**: (23.68137, 121.41771)
 - **東北角 | Northeast**: (23.68108, 121.45639)
 - **西南角 | Southwest**: (23.65397, 121.41760)
 - **東南角 | Southeast**: (23.65396, 121.45657)
 
 ### 精度設定 | Precision Settings
+
 - **物理尺寸 | Physical Size**: 4km × 3km
 - **網格精度 | Grid Precision**: 5m × 5m
 - **網格維度 | Grid Dimensions**: 800 × 600

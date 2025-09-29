@@ -36,11 +36,13 @@ assignees: ''
 **請完成以下資訊 | Please complete the following information:**
 
 ### 裝置 | Device
+
 - [ ] 桌面電腦 | Desktop
 - [ ] 行動裝置 | Mobile
 - [ ] 平板 | Tablet
 
 ### 作業系統 | Operating System
+
 - [ ] Windows
 - [ ] macOS
 - [ ] Linux
@@ -48,13 +50,15 @@ assignees: ''
 - [ ] Android
 
 ### 瀏覽器 | Browser
+
 - [ ] Chrome
 - [ ] Firefox
 - [ ] Safari
 - [ ] Edge
-- [ ] 其他 | Other: ___________
+- [ ] 其他 | Other: ****\_\_\_****
 
 **版本資訊 | Version Information:**
+
 - 瀏覽器版本 | Browser version: [例如 Chrome 91.0.4472.124]
 - 作業系統版本 | OS version: [例如 Windows 10, iOS 14.6]
 
@@ -68,8 +72,9 @@ assignees: ''
 - [ ] 圖磚載入問題 | Tile loading issue
 
 **座標資訊 | Location Information (如果相關 | if relevant):**
-- 經度 | Latitude: 
-- 緯度 | Longitude: 
+
+- 經度 | Latitude:
+- 緯度 | Longitude:
 - 是否在光復範圍內 | Within Guangfu area: [ ] 是 Yes / [ ] 否 No
 
 ## 網路連線 | Network Connection

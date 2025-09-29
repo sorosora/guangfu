@@ -137,12 +137,14 @@ We only collect necessary data:
 
 #### 環境變數分類 | Environment Variables Classification
 
-**🌐 公開變數 (NEXT_PUBLIC_)**
+**🌐 公開變數 (NEXT*PUBLIC*)**
+
 - 會暴露於瀏覽器端，不可包含敏感資訊
 - 適用於: API 端點 URL、公開配置選項
 - 範例: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_TILES_BASE_URL`
 
 **🔒 私密變數**
+
 - 僅在伺服器端使用，絕不暴露於瀏覽器
 - 適用於: API 金鑰、資料庫連線字串、密碼
 - 範例: `SUPABASE_SERVICE_ROLE_KEY`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
@@ -150,12 +152,14 @@ We only collect necessary data:
 ### 🛡️ 安全最佳實踐 | Security Best Practices
 
 #### 開發環境 | Development Environment
+
 - ✅ 使用 `.env.local` 儲存本地環境變數
 - ✅ 確保 `.env.local` 被 `.gitignore` 忽略
 - ✅ 使用開發專用的 API 金鑰，避免影響生產環境
 - ✅ 定期檢查是否意外提交敏感檔案
 
 #### 生產環境 | Production Environment
+
 - ✅ 在 Vercel Dashboard 設定環境變數
 - ✅ 在 GitHub Secrets 設定 Actions 所需變數
 - ✅ 使用不同的 API 金鑰區分開發與生產環境
@@ -166,6 +170,7 @@ We only collect necessary data:
 #### 環境變數洩漏處理 | Environment Variables Leak Handling
 
 **如果環境變數意外暴露:**
+
 1. **立即輪換 | Immediate Rotation**: 立即更換所有相關 API 金鑰
 2. **撤銷存取 | Revoke Access**: 撤銷洩漏金鑰的所有權限
 3. **清理歷史 | Clean History**: 使用 `git filter-branch` 清理 Git 歷史
@@ -173,6 +178,7 @@ We only collect necessary data:
 5. **監控活動 | Monitor Activity**: 監控可疑的 API 使用活動
 
 #### 預防措施 | Prevention Measures
+
 - 🔍 使用 `git log --all -S "API_KEY"` 搜尋可能的金鑰洩漏
 - 🛠️ 設定 pre-commit hooks 檢查敏感資訊
 - 📊 定期稽核環境變數使用情況
@@ -181,18 +187,21 @@ We only collect necessary data:
 ### 📋 環境變數安全檢查清單 | Environment Variables Security Checklist
 
 **開發階段 | Development Phase**
+
 - [ ] `.env.local` 已被 `.gitignore` 忽略
 - [ ] 沒有在程式碼中硬編碼 API 金鑰
 - [ ] 使用開發專用的 API 金鑰
 - [ ] 環境變數名稱遵循命名慣例
 
 **部署階段 | Deployment Phase**
+
 - [ ] Vercel 環境變數已正確設定
 - [ ] GitHub Secrets 已正確配置
 - [ ] 生產環境使用獨立的 API 金鑰
 - [ ] 環境變數權限已適當限制
 
 **維護階段 | Maintenance Phase**
+
 - [ ] 定期輪換 API 金鑰
 - [ ] 監控 API 使用情況
 - [ ] 檢查環境變數是否過期

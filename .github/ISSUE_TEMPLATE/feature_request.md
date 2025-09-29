@@ -29,6 +29,7 @@ assignees: ''
 **請描述這個功能的具體使用情境 | Please describe specific use cases for this feature:**
 
 ### 使用者角色 | User Roles
+
 - [ ] 一般民眾 | General public
 - [ ] 救災人員 | Rescue workers
 - [ ] 志工 | Volunteers
@@ -36,6 +37,7 @@ assignees: ''
 - [ ] 專案維護者 | Project maintainers
 
 ### 使用場景 | Usage Scenarios
+
 **詳細描述使用者如何使用這個功能 | Describe in detail how users would use this feature:**
 
 1. 使用者需要... | User needs to...
@@ -51,7 +53,7 @@ assignees: ''
 - [ ] 資料分析功能 | Data analysis feature
 - [ ] 管理工具 | Administrative tool
 - [ ] 整合功能 | Integration feature
-- [ ] 其他 | Other: ___________
+- [ ] 其他 | Other: ****\_\_\_****
 
 ## 優先級 | Priority
 
@@ -65,11 +67,13 @@ assignees: ''
 ## 技術考量 | Technical Considerations
 
 ### 實作複雜度 | Implementation Complexity
+
 - [ ] 簡單 | Simple - 小幅修改現有功能 | Minor modification to existing features
 - [ ] 中等 | Medium - 需要新的元件或 API | Requires new components or APIs
 - [ ] 複雜 | Complex - 重大架構變更 | Major architectural changes
 
 ### 相依性 | Dependencies
+
 **這個功能是否依賴其他功能或服務？ | Does this feature depend on other features or services?**
 
 - [ ] 無相依性 | No dependencies
@@ -89,7 +93,7 @@ assignees: ''
 - [ ] 回報準確度提升 | Improved reporting accuracy
 - [ ] 系統效能改善 | System performance improvement
 - [ ] 使用者滿意度 | User satisfaction
-- [ ] 其他指標 | Other metrics: ___________
+- [ ] 其他指標 | Other metrics: ****\_\_\_****
 
 ## 國際化考量 | Internationalization Considerations
 

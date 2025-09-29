@@ -12,21 +12,21 @@ In the interest of fostering an open and welcoming environment, we as contributo
 
 Examples of behavior that contributes to creating a positive environment include:
 
-* **使用友善且包容的語言 | Using welcoming and inclusive language**
-* **尊重不同的觀點和經驗 | Being respectful of differing viewpoints and experiences**
-* **優雅地接受建設性批評 | Gracefully accepting constructive criticism**
-* **專注於對社群最有益的事情 | Focusing on what is best for the community**
-* **對其他社群成員表現同理心 | Showing empathy towards other community members**
+- **使用友善且包容的語言 | Using welcoming and inclusive language**
+- **尊重不同的觀點和經驗 | Being respectful of differing viewpoints and experiences**
+- **優雅地接受建設性批評 | Gracefully accepting constructive criticism**
+- **專注於對社群最有益的事情 | Focusing on what is best for the community**
+- **對其他社群成員表現同理心 | Showing empathy towards other community members**
 
 不當行為包括：
 
 Examples of unacceptable behavior by participants include:
 
-* **使用與性有關的言語或圖像，以及不受歡迎的性關注或搭訕 | The use of sexualized language or imagery and unwelcome sexual attention or advances**
-* **惡意攻擊、侮辱/貶損評論，以及個人或政治攻擊 | Trolling, insulting/derogatory comments, and personal or political attacks**
-* **公開或私下的騷擾 | Public or private harassment**
-* **未經明確許可，發佈他人的個人資料（如住址、電子郵件地址） | Publishing others' private information, such as a physical or electronic address, without explicit permission**
-* **其他可能被合理認定為不適當或不專業的行為 | Other conduct which could reasonably be considered inappropriate in a professional setting**
+- **使用與性有關的言語或圖像，以及不受歡迎的性關注或搭訕 | The use of sexualized language or imagery and unwelcome sexual attention or advances**
+- **惡意攻擊、侮辱/貶損評論，以及個人或政治攻擊 | Trolling, insulting/derogatory comments, and personal or political attacks**
+- **公開或私下的騷擾 | Public or private harassment**
+- **未經明確許可，發佈他人的個人資料（如住址、電子郵件地址） | Publishing others' private information, such as a physical or electronic address, without explicit permission**
+- **其他可能被合理認定為不適當或不專業的行為 | Other conduct which could reasonably be considered inappropriate in a professional setting**
 
 ## 我們的責任 | Our Responsibilities
 
@@ -62,11 +62,11 @@ Project maintainers who do not follow or enforce the Code of Conduct in good fai
 
 This project involves disaster relief and community reconstruction. In this context:
 
-* **優先考慮受災民眾的需求和感受 | Prioritize the needs and feelings of disaster-affected residents**
-* **保持對緊急情況的敏感度 | Maintain sensitivity to emergency situations**
-* **確保資訊的準確性和及時性 | Ensure information accuracy and timeliness**
-* **尊重當地文化和習俗 | Respect local culture and customs**
-* **避免可能造成恐慌或誤解的言論 | Avoid statements that may cause panic or misunderstanding**
+- **優先考慮受災民眾的需求和感受 | Prioritize the needs and feelings of disaster-affected residents**
+- **保持對緊急情況的敏感度 | Maintain sensitivity to emergency situations**
+- **確保資訊的準確性和及時性 | Ensure information accuracy and timeliness**
+- **尊重當地文化和習俗 | Respect local culture and customs**
+- **避免可能造成恐慌或誤解的言論 | Avoid statements that may cause panic or misunderstanding**
 
 ### 多語言環境 | Multilingual Environment
 
@@ -74,10 +74,10 @@ This project involves disaster relief and community reconstruction. In this cont
 
 As this project serves a multilingual community:
 
-* **尊重語言差異，耐心協助翻譯 | Respect language differences and patiently assist with translation**
-* **避免因語言能力差異而產生歧視 | Avoid discrimination based on language proficiency**
-* **鼓勵使用清晰、簡潔的表達方式 | Encourage clear and concise expression**
-* **提供多語言支援時保持準確性 | Maintain accuracy when providing multilingual support**
+- **尊重語言差異，耐心協助翻譯 | Respect language differences and patiently assist with translation**
+- **避免因語言能力差異而產生歧視 | Avoid discrimination based on language proficiency**
+- **鼓勵使用清晰、簡潔的表達方式 | Encourage clear and concise expression**
+- **提供多語言支援時保持準確性 | Maintain accuracy when providing multilingual support**
 
 ## 回報流程 | Reporting Process
 
