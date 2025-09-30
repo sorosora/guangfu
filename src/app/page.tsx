@@ -16,6 +16,7 @@ import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
 import LayerControlPanel from '@/components/Map/LayerControlPanel';
 import DebugPanel from '@/components/DebugPanel';
+import { shouldShowDebugPanel } from '@/lib/environment';
 
 // 動態載入地圖以避免 SSR 問題
 const DynamicMap = dynamic(
@@ -56,6 +57,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [canZoomIn, setCanZoomIn] = useState(true);
   const [canZoomOut, setCanZoomOut] = useState(true);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // 圖層可見性狀態
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
@@ -67,6 +69,8 @@ export default function Home() {
   // 客戶端初始化
   useEffect(() => {
     setIsClient(true);
+    // 檢查是否應該顯示除錯面板
+    setShowDebugPanel(shouldShowDebugPanel());
   }, []);
 
   // 同步區域配置到 ref
@@ -421,8 +425,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* 除錯面板 */}
-        <DebugPanel currentArea={currentAreaMode} onAreaChange={switchArea} />
+        {/* 除錯面板 - 只在非生產環境顯示 */}
+        {showDebugPanel && <DebugPanel currentArea={currentAreaMode} onAreaChange={switchArea} />}
       </div>
     );
   };

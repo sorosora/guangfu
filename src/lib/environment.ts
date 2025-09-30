@@ -39,7 +39,7 @@ export function shouldShowAreaSwitcher(): boolean {
       console.log('區域切換顯示檢查:', {
         shouldShow,
         nodeEnv: process.env.NODE_ENV,
-        vercelEnv: process.env.VERCEL_ENV,
+        vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
       });
     }
 
@@ -58,15 +58,31 @@ export function getEnvironmentType(): 'development' | 'preview' | 'production' |
     return 'development';
   }
 
-  if (process.env.VERCEL_ENV === 'preview') {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview') {
     return 'preview';
   }
 
-  if (process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production') {
+  if (
+    process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ||
+    process.env.NODE_ENV === 'production'
+  ) {
     return 'production';
   }
 
   return 'unknown';
+}
+
+/**
+ * 檢查是否應該顯示除錯面板
+ */
+export function shouldShowDebugPanel(): boolean {
+  // 確保在客戶端執行
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const envType = getEnvironmentType();
+  return envType === 'development' || envType === 'preview';
 }
 
 /**

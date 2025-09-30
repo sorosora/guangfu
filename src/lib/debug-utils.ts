@@ -27,7 +27,7 @@ export function collectEnvironmentInfo(): EnvironmentInfo {
 
   return {
     nodeEnv: process.env.NODE_ENV,
-    vercelEnv: process.env.VERCEL_ENV,
+    vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
     hasTestAreaConfig: hasTestAreaConfiguration(),
     testAreaEnvVars,
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
@@ -209,7 +209,7 @@ export function exportDiagnosticInfo(
     '',
     '## 環境資訊',
     `NODE_ENV: ${envInfo.nodeEnv || 'undefined'}`,
-    `VERCEL_ENV: ${envInfo.vercelEnv || 'undefined'}`,
+    `NEXT_PUBLIC_VERCEL_ENV: ${envInfo.vercelEnv || 'undefined'}`,
     `測試區域配置: ${envInfo.hasTestAreaConfig ? '完整' : '不完整'}`,
     `用戶代理: ${envInfo.userAgent}`,
     `網址: ${envInfo.url}`,

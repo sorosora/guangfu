@@ -253,7 +253,7 @@ export default function DebugPanel({ currentArea, onAreaChange, className }: Deb
                 </div>
               </div>
               <div>
-                <span className="font-medium text-gray-600">VERCEL_ENV:</span>
+                <span className="font-medium text-gray-600">NEXT_PUBLIC_VERCEL_ENV:</span>
                 <div
                   className={cn(
                     'mt-1 px-2 py-1 rounded text-white text-center',
