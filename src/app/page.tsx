@@ -12,6 +12,7 @@ import { getCurrentPosition, watchPosition, clearWatch } from '@/lib/geolocation
 import { isWithinBounds } from '@/lib/coordinates';
 import { Location, ReportData, LayerVisibility } from '@/types/map';
 import { getDefaultAreaConfig, AreaMode, AVAILABLE_AREAS } from '@/config/areas';
+import { submitReportWithRetry, ApiError } from '@/lib/api-client';
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
 import LayerControlPanel from '@/components/Map/LayerControlPanel';
@@ -240,16 +241,28 @@ export default function Home() {
       };
 
       try {
-        // 這裡之後會連接到 API
-        console.log('回報資料:', reportData);
+        // 調用後端 API
+        const response = await submitReportWithRetry(reportData, 2);
 
-        // 模擬 API 呼叫
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (response.success) {
+          const stateText = state === 1 ? '有淤泥' : '已清除';
+          toast.success(`${response.message || `已回報${stateText}`}`);
 
-        toast.success(state === 1 ? '已回報有淤泥' : '已回報清除完成');
+          // 可選：顯示額外的成功資訊
+          if (response.data) {
+            console.log('回報成功詳情:', response.data);
+          }
+        } else {
+          toast.error(response.message || '回報失敗');
+        }
       } catch (error) {
-        toast.error('回報失敗，請重試');
-        console.error('Report error:', error);
+        console.error('回報錯誤:', error);
+
+        if (error instanceof ApiError) {
+          toast.error(error.getUserFriendlyMessage());
+        } else {
+          toast.error('回報失敗，請重試');
+        }
       }
     },
     [userLocation]
