@@ -14,10 +14,12 @@ import { Location, ReportData } from '@/types/map';
 import { getDefaultAreaConfig, AreaMode, AVAILABLE_AREAS } from '@/config/areas';
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
+import LayerControlPanel from '@/components/Map/LayerControlPanel';
+import { shouldShowAreaSwitcher } from '@/lib/environment';
 
 // 動態載入地圖以避免 SSR 問題
 const DynamicMap = dynamic(
-  () => import('@/components/Map').then((mod) => ({ default: mod.MapContainer })),
+  () => import('@/components/Map/client').then((mod) => ({ default: mod.MapContainer })),
   {
     ssr: false,
     loading: () => (
@@ -55,9 +57,19 @@ export default function Home() {
   const [canZoomIn, setCanZoomIn] = useState(true);
   const [canZoomOut, setCanZoomOut] = useState(true);
 
+  // 圖層可見性狀態
+  const [layerVisibility, setLayerVisibility] = useState({
+    tiles: true,
+    manual: true,
+  });
+
+  // 檢查是否應該顯示區域切換 (僅在客戶端)
+  const [showAreaSwitcher, setShowAreaSwitcher] = useState(false);
+
   // 客戶端初始化
   useEffect(() => {
     setIsClient(true);
+    setShowAreaSwitcher(shouldShowAreaSwitcher());
   }, []);
 
   // 同步區域配置到 ref
@@ -274,6 +286,14 @@ export default function Home() {
     mapRef.current?.zoomOut();
   }, []);
 
+  // 圖層控制處理函式
+  const handleLayerToggle = useCallback((layerKey: 'tiles' | 'manual', enabled: boolean) => {
+    setLayerVisibility((prev) => ({
+      ...prev,
+      [layerKey]: enabled,
+    }));
+  }, []);
+
   // 重新請求位置權限
   const requestLocationPermission = useCallback(() => {
     initLocationTracking();
@@ -293,33 +313,19 @@ export default function Home() {
           onMapClick={handleMapClick}
           areaConfig={currentAreaConfig}
           onZoomChange={handleZoomChange}
+          layerVisibility={layerVisibility}
           className="w-full h-screen"
         />
 
-        {/* 區域狀態指示器和切換 */}
-        <div className="fixed top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="text-sm">
-              <div className="font-medium text-gray-900">{currentAreaConfig.displayName}</div>
-              <div className="text-xs text-gray-500">{currentAreaConfig.description}</div>
-            </div>
-            <div className="flex space-x-1">
-              {Object.entries(AVAILABLE_AREAS).map(([key, config]) => (
-                <button
-                  key={key}
-                  onClick={() => switchArea(key as AreaMode)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    currentAreaMode === key
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {config.name === 'test' ? '測試' : '生產'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* 圖層控制面板 - 在所有狀態下都顯示 */}
+        <LayerControlPanel
+          layers={layerVisibility}
+          onLayerToggle={handleLayerToggle}
+          currentArea={currentAreaMode}
+          onAreaChange={switchArea}
+          areaDisplayName={currentAreaConfig.displayName}
+          showAreaSwitcher={showAreaSwitcher}
+        />
 
         {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
         {appState !== 'requesting' && (

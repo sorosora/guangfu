@@ -47,8 +47,9 @@ export function getCurrentPosition(): Promise<Location> {
         reject(error);
         return;
       }
-      
-      const errorMessage = error && typeof error === 'object' && 'message' in error ? error.message : '未知錯誤';
+
+      const errorMessage =
+        error && typeof error === 'object' && 'message' in error ? error.message : '未知錯誤';
       console.log('高精度定位失敗，嘗試低精度定位:', errorMessage);
     }
 
@@ -64,7 +65,8 @@ export function getCurrentPosition(): Promise<Location> {
         return;
       }
 
-      const errorMessage = error && typeof error === 'object' && 'message' in error ? error.message : '未知錯誤';
+      const errorMessage =
+        error && typeof error === 'object' && 'message' in error ? error.message : '未知錯誤';
       console.log('低精度定位也失敗:', errorMessage);
       reject(error);
     }

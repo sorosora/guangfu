@@ -26,6 +26,7 @@ export function PermissionModal({
   areaName,
 }: PermissionModalProps) {
   const [step, setStep] = useState<'intro' | 'permission'>('intro');
+  const [hostname, setHostname] = useState<string>('');
 
   const handleNext = () => {
     setStep('permission');
@@ -46,6 +47,13 @@ export function PermissionModal({
       setStep('intro');
     }
   }, [isOpen]);
+
+  // 在客戶端設定 hostname
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHostname(window.location.hostname);
+    }
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -124,9 +132,7 @@ export function PermissionModal({
             <div className="space-y-4 py-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">瀏覽器將會詢問您：</h4>
-                <p className="text-sm text-blue-800">
-                  「{window.location.hostname} 想要知道您的位置」
-                </p>
+                <p className="text-sm text-blue-800">「{hostname || '此網站'} 想要知道您的位置」</p>
                 <p className="text-sm text-blue-700 mt-2">
                   請點擊「<strong>允許</strong>」或「<strong>Allow</strong>」以繼續使用。
                 </p>

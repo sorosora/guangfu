@@ -1,4 +1,5 @@
 import { Location } from '@/types/map';
+import { shouldEnableTestArea } from '@/lib/environment';
 
 // 從環境變數讀取測試區域配置
 function getTestAreaFromEnv(): Partial<AreaConfig> | null {
@@ -123,8 +124,13 @@ export const GUANGFU_CONFIG: AreaConfig = {
   gridPrecision: 5,
 };
 
-// 建立測試區域配置（優先使用環境變數，否則使用預設值）
+// 建立測試區域配置（只在符合條件時使用環境變數）
 function createTestConfig(): AreaConfig {
+  // 只有在允許啟用測試區域時才讀取環境變數
+  if (!shouldEnableTestArea()) {
+    return GUANGFU_CONFIG;
+  }
+
   const envConfig = getTestAreaFromEnv();
 
   if (envConfig && envConfig.bounds && envConfig.center) {
@@ -156,12 +162,11 @@ export type AreaMode = keyof typeof AVAILABLE_AREAS;
 
 // 獲取預設區域配置
 export function getDefaultAreaConfig(): AreaConfig {
-  // 從環境變數讀取
-  const envArea = process.env.NEXT_PUBLIC_AREA_MODE as AreaMode;
-  if (envArea && AVAILABLE_AREAS[envArea]) {
-    return AVAILABLE_AREAS[envArea];
+  // 如果符合測試區域啟用條件，且測試區域可用，則使用測試區域
+  if (shouldEnableTestArea() && TEST_CONFIG.name === 'test') {
+    return TEST_CONFIG;
   }
 
-  // 預設使用光復鄉（生產環境）
+  // 否則使用光復鄉配置
   return GUANGFU_CONFIG;
 }

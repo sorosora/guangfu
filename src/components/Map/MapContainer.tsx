@@ -12,6 +12,8 @@ import {
 } from 'react-leaflet';
 import { Location } from '@/types/map';
 import { AreaConfig } from '@/config/areas';
+import CustomTileLayer from './CustomTileLayer';
+import ManualAnnotationLayer from './ManualAnnotationLayer';
 import 'leaflet/dist/leaflet.css';
 
 // 延遲載入 Leaflet 以避免 SSR 問題
@@ -24,6 +26,10 @@ interface MapProps {
   onMapClick?: (location: Location) => void;
   areaConfig: AreaConfig;
   onZoomChange?: (zoom: number, canZoomIn: boolean, canZoomOut: boolean) => void;
+  layerVisibility: {
+    tiles: boolean;
+    manual: boolean;
+  };
   className?: string;
 }
 
@@ -166,15 +172,14 @@ function LocationMarkerInternal({
   useEffect(() => {
     // 建立使用者位置的自訂圖示
     if (L && typeof window !== 'undefined') {
+      const svgIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="#ffffff"/></svg>`;
+      const iconDataUrl =
+        typeof btoa !== 'undefined'
+          ? 'data:image/svg+xml;base64,' + btoa(svgIcon)
+          : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
       const icon = new L.Icon({
-        iconUrl:
-          'data:image/svg+xml;base64,' +
-          btoa(`
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/>
-            <circle cx="12" cy="12" r="3" fill="#ffffff"/>
-          </svg>
-        `),
+        iconUrl: iconDataUrl,
         iconSize: [24, 24],
         iconAnchor: [12, 12],
         popupAnchor: [0, 0],
@@ -224,6 +229,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     onMapClick,
     areaConfig,
     onZoomChange,
+    layerVisibility,
     className = 'w-full h-screen',
   },
   ref
@@ -242,7 +248,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   // 動態載入 Leaflet
   useEffect(() => {
-
     // 動態載入 Leaflet
     const loadLeaflet = async () => {
       if (typeof window !== 'undefined' && !L) {
@@ -293,45 +298,50 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   ]);
 
   return (
-    <div className={className}>
-      <MapContainer
-        center={[mapCenter.lat, mapCenter.lon]}
-        zoom={16}
-        style={{ height: '100%', width: '100%' }}
-        maxBounds={bounds}
-        maxBoundsViscosity={1.0}
-        minZoom={14}
+    <MapContainer
+      center={[mapCenter.lat, mapCenter.lon]}
+      zoom={16}
+      style={{ height: '100%', width: '100%' }}
+      maxBounds={bounds}
+      maxBoundsViscosity={1.0}
+      minZoom={14}
+      maxZoom={19}
+      zoomControl={false}
+      className={className}
+      ref={leafletMapRef}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
-        zoomControl={false}
-        ref={leafletMapRef}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-        />
+      />
 
-        {/* 地圖控制器 */}
-        <MapController center={center} lockCenter={lockCenter} userLocation={userLocation} />
+      {/* 手動標註區域圖層 */}
+      <ManualAnnotationLayer visible={layerVisibility.manual} opacity={0.1} />
 
-        {/* 地圖邊界控制器 */}
-        <MapBoundsController areaConfig={areaConfig} />
+      {/* 自訂淤泥狀態圖磚圖層 */}
+      {layerVisibility.tiles && <CustomTileLayer opacity={0.7} zIndex={1001} />}
 
-        {/* 縮放控制器 */}
-        <ZoomController onZoomChange={onZoomChange} mapRef={mapControlRef} />
+      {/* 地圖控制器 */}
+      <MapController center={center} lockCenter={lockCenter} userLocation={userLocation} />
 
-        {/* 地圖事件處理 */}
-        <MapEventHandler onMapClick={onMapClick} />
+      {/* 地圖邊界控制器 */}
+      <MapBoundsController areaConfig={areaConfig} />
 
-        {/* 使用者位置標記 */}
-        {userLocation && (
-          <LocationMarkerInternal position={userLocation} accuracy={10} showAccuracyCircle={true} />
-        )}
+      {/* 縮放控制器 */}
+      <ZoomController onZoomChange={onZoomChange} mapRef={mapControlRef} />
 
-        {/* 比例尺 */}
-        <ScaleControl position="bottomleft" />
-      </MapContainer>
-    </div>
+      {/* 地圖事件處理 */}
+      <MapEventHandler onMapClick={onMapClick} />
+
+      {/* 使用者位置標記 */}
+      {userLocation && (
+        <LocationMarkerInternal position={userLocation} accuracy={10} showAccuracyCircle={true} />
+      )}
+
+      {/* 比例尺 */}
+      <ScaleControl position="bottomleft" />
+    </MapContainer>
   );
 });
 
