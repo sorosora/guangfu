@@ -10,7 +10,7 @@ import { PermissionModal } from '@/components/ui/permission-modal';
 import { WelcomeButtons } from '@/components/ui/welcome-buttons';
 import { getCurrentPosition, watchPosition, clearWatch } from '@/lib/geolocation';
 import { isWithinBounds } from '@/lib/coordinates';
-import { Location, ReportData } from '@/types/map';
+import { Location, ReportData, LayerVisibility } from '@/types/map';
 import { getDefaultAreaConfig, AreaMode, AVAILABLE_AREAS } from '@/config/areas';
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
@@ -58,9 +58,10 @@ export default function Home() {
   const [canZoomOut, setCanZoomOut] = useState(true);
 
   // 圖層可見性狀態
-  const [layerVisibility, setLayerVisibility] = useState({
+  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
     tiles: true,
     manual: true,
+    kmz: true,
   });
 
   // 檢查是否應該顯示區域切換 (僅在客戶端)
@@ -287,7 +288,7 @@ export default function Home() {
   }, []);
 
   // 圖層控制處理函式
-  const handleLayerToggle = useCallback((layerKey: 'tiles' | 'manual', enabled: boolean) => {
+  const handleLayerToggle = useCallback((layerKey: keyof LayerVisibility, enabled: boolean) => {
     setLayerVisibility((prev) => ({
       ...prev,
       [layerKey]: enabled,

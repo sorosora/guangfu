@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AreaMode } from '@/config/areas';
 
+import { LayerVisibility } from '@/types/map';
+
 interface LayerControlPanelProps {
-  layers: {
-    tiles: boolean;
-    manual: boolean;
-  };
-  onLayerToggle: (layerKey: 'tiles' | 'manual', enabled: boolean) => void;
+  layers: LayerVisibility;
+  onLayerToggle: (layerKey: keyof LayerVisibility, enabled: boolean) => void;
   currentArea: AreaMode;
   onAreaChange: (area: AreaMode) => void;
   areaDisplayName: string;
@@ -87,6 +86,29 @@ export default function LayerControlPanel({
                   className={cn(
                     'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
                     layers.manual ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* 救災資訊 - 第三層 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">⛑️</span>
+                <span className="text-sm font-medium text-gray-700">救災資訊</span>
+              </div>
+              <button
+                onClick={() => onLayerToggle('kmz', !layers.kmz)}
+                className={cn(
+                  'w-10 h-5 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                  layers.kmz ? 'bg-green-600' : 'bg-gray-300'
+                )}
+                aria-label={`${layers.kmz ? '隱藏' : '顯示'}救災資訊圖層`}
+              >
+                <div
+                  className={cn(
+                    'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
+                    layers.kmz ? 'translate-x-5' : 'translate-x-0.5'
                   )}
                 />
               </button>

@@ -10,10 +10,11 @@ import {
   Circle,
   ScaleControl,
 } from 'react-leaflet';
-import { Location } from '@/types/map';
+import { Location, LayerVisibility } from '@/types/map';
 import { AreaConfig } from '@/config/areas';
 import CustomTileLayer from './CustomTileLayer';
 import ManualAnnotationLayer from './ManualAnnotationLayer';
+import KMZLayer from './KMZLayer';
 import 'leaflet/dist/leaflet.css';
 
 // 延遲載入 Leaflet 以避免 SSR 問題
@@ -26,10 +27,7 @@ interface MapProps {
   onMapClick?: (location: Location) => void;
   areaConfig: AreaConfig;
   onZoomChange?: (zoom: number, canZoomIn: boolean, canZoomOut: boolean) => void;
-  layerVisibility: {
-    tiles: boolean;
-    manual: boolean;
-  };
+  layerVisibility: LayerVisibility;
   className?: string;
 }
 
@@ -321,6 +319,11 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
       {/* 自訂淤泥狀態圖磚圖層 */}
       {layerVisibility.tiles && <CustomTileLayer opacity={0.7} zIndex={1001} />}
+
+      {/* KMZ 圖層 (Google My Maps) */}
+      {process.env.NEXT_PUBLIC_KMZ_BASE_URL && (
+        <KMZLayer url={process.env.NEXT_PUBLIC_KMZ_BASE_URL} visible={layerVisibility.kmz} />
+      )}
 
       {/* 地圖控制器 */}
       <MapController center={center} lockCenter={lockCenter} userLocation={userLocation} />
