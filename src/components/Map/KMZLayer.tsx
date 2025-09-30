@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import type { KMZLayer } from 'leaflet-kmz';
 
 // 延遲載入 Leaflet 和 leaflet-kmz 以避免 SSR 問題
 let L: typeof import('leaflet') | null = null;
-let kmzLoaded = false;
 
 interface KMZLayerProps {
   url: string;
@@ -16,6 +15,7 @@ interface KMZLayerProps {
 export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
   const map = useMap();
   const kmzLayerRef = useRef<KMZLayer | null>(null);
+  const [dependenciesLoaded, setDependenciesLoaded] = useState(false);
 
   // 動態載入依賴
   useEffect(() => {
@@ -30,14 +30,14 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         }
 
         // 載入 leaflet-kmz
-        if (!kmzLoaded) {
+        if (!dependenciesLoaded) {
           await import('leaflet-kmz');
           // 確保插件正確註冊到 Leaflet
           if (L && typeof (L as unknown as { kmzLayer?: unknown }).kmzLayer !== 'function') {
             // 如果自動註冊失敗，手動執行
             console.warn('leaflet-kmz 未自動註冊，嘗試手動初始化');
           }
-          kmzLoaded = true;
+          setDependenciesLoaded(true);
         }
       } catch (error) {
         console.error('載入 KMZ 依賴失敗:', error);
@@ -50,7 +50,7 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
   // 載入 KMZ 檔案 - 只在相關依賴變化時重新載入
   useEffect(() => {
     const loadKMZ = async () => {
-      if (!L || !kmzLoaded || !url) return;
+      if (!L || !dependenciesLoaded || !url) return;
 
       try {
         // 清理舊的圖層
@@ -100,7 +100,7 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         kmzLayerRef.current = null;
       }
     };
-  }, [url, map]);
+  }, [url, map, dependenciesLoaded]);
 
   // 處理可見性變化
   useEffect(() => {
