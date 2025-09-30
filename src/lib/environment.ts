@@ -73,18 +73,16 @@ export function getEnvironmentType(): 'development' | 'preview' | 'production' |
  * 檢查是否有完整的測試區域配置
  */
 export function hasTestAreaConfiguration(): boolean {
-  const requiredEnvVars = [
-    'NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT',
-    'NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON',
-    'NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT',
-    'NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON',
-    'NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT',
-    'NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON',
-    'NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT',
-    'NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON',
-    'NEXT_PUBLIC_TEST_AREA_CENTER_LAT',
-    'NEXT_PUBLIC_TEST_AREA_CENTER_LON',
-  ];
-
-  return requiredEnvVars.every((envVar) => !!process.env[envVar]);
+  return !!(
+    process.env.NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT &&
+    process.env.NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON &&
+    process.env.NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT &&
+    process.env.NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON &&
+    process.env.NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT &&
+    process.env.NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON &&
+    process.env.NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT &&
+    process.env.NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON &&
+    process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LAT &&
+    process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LON
+  );
 }

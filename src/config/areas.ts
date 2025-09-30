@@ -14,7 +14,6 @@ function getTestAreaFromEnv(): Partial<AreaConfig> | null {
     southEastLon: process.env.NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON,
     centerLat: process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LAT,
     centerLon: process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LON,
-    description: process.env.NEXT_PUBLIC_TEST_AREA_DESCRIPTION,
   };
 
   // 檢查是否所有必要的座標都存在
@@ -81,7 +80,6 @@ function getTestAreaFromEnv(): Partial<AreaConfig> | null {
     return {
       bounds,
       center,
-      description: envVars.description || '測試區域（來自環境變數）',
     };
   } catch (error) {
     console.warn('測試區域環境變數格式錯誤，使用預設配置:', error);
@@ -136,10 +134,10 @@ function createTestConfig(): AreaConfig {
   if (envConfig && envConfig.bounds && envConfig.center) {
     return {
       name: 'test',
-      displayName: '測試區域',
+      displayName: '測試地區',
       bounds: envConfig.bounds,
       center: envConfig.center,
-      description: envConfig.description || '測試區域（來自環境變數）',
+      description: '來自環境變數',
       physicalSize: { width: 4000, height: 3000 },
       gridSize: { width: 800, height: 600 },
       gridPrecision: 5,

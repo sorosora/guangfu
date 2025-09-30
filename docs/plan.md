@@ -165,6 +165,7 @@
 ### 4.2 Python 圖磚生成腳本
 
 #### 4.2.1 POC 版本
+
 - [x] 建立 `poc_generate_tiles.py` POC 腳本
 - [x] 安裝 Python 套件：`pip install pillow numpy`
   - [x] pillow
@@ -175,6 +176,7 @@
 - [x] 實作中繼資料 JSON 生成 (`metadata.json`)
 
 #### 4.2.2 生產版本
+
 - [ ] 建立 `generate_tiles.py` 生產腳本
 - [ ] 新增 Redis 連線與資料讀取
 - [ ] 新增 boto3 套件支援
@@ -199,6 +201,7 @@
 ### 4.4 前端圖磚載入
 
 #### 4.4.1 POC 版本
+
 - [x] CustomTileLayer 元件實作
 - [x] 靜態圖磚載入與顯示
 - [x] 中繼資料 JSON 讀取
@@ -207,6 +210,7 @@
 - [x] 圖層透明度與順序控制
 
 #### 4.4.2 生產版本
+
 - [ ] 實作 `version.json` 輪詢
 - [ ] 建立動態圖磚 URL 生成
 - [ ] 實作圖磚快取機制
