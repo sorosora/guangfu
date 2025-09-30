@@ -15,7 +15,7 @@ import { getDefaultAreaConfig, AreaMode, AVAILABLE_AREAS } from '@/config/areas'
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
 import LayerControlPanel from '@/components/Map/LayerControlPanel';
-import { shouldShowAreaSwitcher } from '@/lib/environment';
+import DebugPanel from '@/components/DebugPanel';
 
 // 動態載入地圖以避免 SSR 問題
 const DynamicMap = dynamic(
@@ -64,13 +64,9 @@ export default function Home() {
     kmz: true,
   });
 
-  // 檢查是否應該顯示區域切換 (僅在客戶端)
-  const [showAreaSwitcher, setShowAreaSwitcher] = useState(false);
-
   // 客戶端初始化
   useEffect(() => {
     setIsClient(true);
-    setShowAreaSwitcher(shouldShowAreaSwitcher());
   }, []);
 
   // 同步區域配置到 ref
@@ -190,9 +186,6 @@ export default function Home() {
         const withinBounds = isWithinBounds(userLocation, newConfig);
         isWithinBoundsRef.current = withinBounds;
       }
-
-      // 確保 Modal 狀態不受區域切換影響
-      // Modal 狀態由使用者操作控制，不因區域切換而重置
     },
     [userLocation]
   );
@@ -256,7 +249,7 @@ export default function Home() {
       }
     },
     [userLocation]
-  ); // 移除 currentAreaConfig 依賴
+  );
 
   // 切換鎖定中心模式
   const toggleLockCenter = useCallback(() => {
@@ -322,10 +315,7 @@ export default function Home() {
         <LayerControlPanel
           layers={layerVisibility}
           onLayerToggle={handleLayerToggle}
-          currentArea={currentAreaMode}
-          onAreaChange={switchArea}
           areaDisplayName={currentAreaConfig.displayName}
-          showAreaSwitcher={showAreaSwitcher}
         />
 
         {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
@@ -363,7 +353,7 @@ export default function Home() {
 
         {/* 狀態提示 */}
         {appState === 'denied' && (
-          <div className="fixed top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[1000]">
+          <div className="fixed top-16 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[1000]">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -390,7 +380,7 @@ export default function Home() {
         )}
 
         {appState === 'requesting' && (
-          <div className="fixed top-4 left-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-[1000]">
+          <div className="fixed top-16 left-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-[1000]">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -404,7 +394,7 @@ export default function Home() {
         )}
 
         {appState === 'unavailable' && (
-          <div className="fixed top-4 left-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-[1000]">
+          <div className="fixed top-16 left-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-[1000]">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -430,6 +420,9 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* 除錯面板 */}
+        <DebugPanel currentArea={currentAreaMode} onAreaChange={switchArea} />
       </div>
     );
   };

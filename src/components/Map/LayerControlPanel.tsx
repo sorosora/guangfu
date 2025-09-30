@@ -3,27 +3,20 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { AreaMode } from '@/config/areas';
 
 import { LayerVisibility } from '@/types/map';
 
 interface LayerControlPanelProps {
   layers: LayerVisibility;
   onLayerToggle: (layerKey: keyof LayerVisibility, enabled: boolean) => void;
-  currentArea: AreaMode;
-  onAreaChange: (area: AreaMode) => void;
   areaDisplayName: string;
-  showAreaSwitcher?: boolean;
   className?: string;
 }
 
 export default function LayerControlPanel({
   layers,
   onLayerToggle,
-  currentArea,
-  onAreaChange,
   areaDisplayName,
-  showAreaSwitcher = false,
   className,
 }: LayerControlPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -45,53 +38,7 @@ export default function LayerControlPanel({
       {isExpanded && (
         <div className="mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[180px]">
           <div className="space-y-3">
-            {/* 即時回報圖磚 - 第一層 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm">📊</span>
-                <span className="text-sm font-medium text-gray-700">即時回報</span>
-              </div>
-              <button
-                onClick={() => onLayerToggle('tiles', !layers.tiles)}
-                className={cn(
-                  'w-10 h-5 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
-                  layers.tiles ? 'bg-blue-600' : 'bg-gray-300'
-                )}
-                aria-label={`${layers.tiles ? '隱藏' : '顯示'}即時回報圖層`}
-              >
-                <div
-                  className={cn(
-                    'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
-                    layers.tiles ? 'translate-x-5' : 'translate-x-0.5'
-                  )}
-                />
-              </button>
-            </div>
-
-            {/* 預估區域 - 第二層 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm">📋</span>
-                <span className="text-sm font-medium text-gray-700">預估區域</span>
-              </div>
-              <button
-                onClick={() => onLayerToggle('manual', !layers.manual)}
-                className={cn(
-                  'w-10 h-5 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
-                  layers.manual ? 'bg-orange-600' : 'bg-gray-300'
-                )}
-                aria-label={`${layers.manual ? '隱藏' : '顯示'}調查區域圖層`}
-              >
-                <div
-                  className={cn(
-                    'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
-                    layers.manual ? 'translate-x-5' : 'translate-x-0.5'
-                  )}
-                />
-              </button>
-            </div>
-
-            {/* 救災資訊 - 第三層 */}
+            {/* 救災資訊 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm">⛑️</span>
@@ -114,43 +61,51 @@ export default function LayerControlPanel({
               </button>
             </div>
 
-            {showAreaSwitcher && (
-              <>
-                <div className="border-t border-gray-200 my-2"></div>
+            {/* 即時回報圖磚 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">📊</span>
+                <span className="text-sm font-medium text-gray-700">即時回報</span>
+              </div>
+              <button
+                onClick={() => onLayerToggle('tiles', !layers.tiles)}
+                className={cn(
+                  'w-10 h-5 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                  layers.tiles ? 'bg-blue-600' : 'bg-gray-300'
+                )}
+                aria-label={`${layers.tiles ? '隱藏' : '顯示'}即時回報圖層`}
+              >
+                <div
+                  className={cn(
+                    'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
+                    layers.tiles ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
 
-                {/* 地區選擇 */}
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm">🌍</span>
-                    <span className="text-sm font-medium text-gray-700">地區</span>
-                  </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => onAreaChange('test')}
-                      className={cn(
-                        'px-2 py-1 rounded text-xs font-medium transition-colors',
-                        currentArea === 'test'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      )}
-                    >
-                      測試區
-                    </button>
-                    <button
-                      onClick={() => onAreaChange('guangfu')}
-                      className={cn(
-                        'px-2 py-1 rounded text-xs font-medium transition-colors',
-                        currentArea === 'guangfu'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      )}
-                    >
-                      光復
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+            {/* 預估區域 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">📋</span>
+                <span className="text-sm font-medium text-gray-700">預估區域</span>
+              </div>
+              <button
+                onClick={() => onLayerToggle('manual', !layers.manual)}
+                className={cn(
+                  'w-10 h-5 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                  layers.manual ? 'bg-orange-600' : 'bg-gray-300'
+                )}
+                aria-label={`${layers.manual ? '隱藏' : '顯示'}調查區域圖層`}
+              >
+                <div
+                  className={cn(
+                    'w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out',
+                    layers.manual ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-gray-100">
