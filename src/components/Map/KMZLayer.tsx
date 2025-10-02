@@ -30,22 +30,22 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         }
 
         // 載入 leaflet-kmz
-        if (!dependenciesLoaded) {
-          await import('leaflet-kmz');
-          // 確保插件正確註冊到 Leaflet
-          if (L && typeof (L as unknown as { kmzLayer?: unknown }).kmzLayer !== 'function') {
-            // 如果自動註冊失敗，手動執行
-            console.warn('leaflet-kmz 未自動註冊，嘗試手動初始化');
-          }
-          setDependenciesLoaded(true);
+        await import('leaflet-kmz');
+        // 確保插件正確註冊到 Leaflet
+        if (L && typeof (L as unknown as { kmzLayer?: unknown }).kmzLayer !== 'function') {
+          // 如果自動註冊失敗，手動執行
+          console.warn('leaflet-kmz 未自動註冊，嘗試手動初始化');
         }
+        setDependenciesLoaded(true);
       } catch (error) {
         console.error('載入 KMZ 依賴失敗:', error);
       }
     };
 
-    loadDependencies();
-  }, []);
+    if (!dependenciesLoaded) {
+      loadDependencies();
+    }
+  }, [dependenciesLoaded]);
 
   // 載入 KMZ 檔案 - 只在相關依賴變化時重新載入
   useEffect(() => {

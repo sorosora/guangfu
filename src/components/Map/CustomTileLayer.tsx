@@ -15,7 +15,7 @@ interface CustomTileLayerProps {
   zIndex?: number;
 }
 
-interface TileMetadata {
+interface VersionInfo {
   version: string;
   generated_at: string;
   grid_size: {
@@ -23,69 +23,178 @@ interface TileMetadata {
     height: number;
   };
   tile_size: number;
-  tile_count: number;
   bounds: {
     north_west: { lat: number; lon: number };
     north_east: { lat: number; lon: number };
     south_west: { lat: number; lon: number };
     south_east: { lat: number; lon: number };
   };
-  states: {
-    unknown: number;
-    clear: number;
-    muddy: number;
-  };
-  colors: {
-    unknown: [number, number, number, number];
-    clear: [number, number, number, number];
-    muddy: [number, number, number, number];
-  };
+}
+
+interface OGCVersionInfo {
+  version: string;
+  timestamp: string;
+  iso_datetime: string;
+  url: string;
+  metadata_url: string;
+}
+
+interface OGCVersionsCollection {
+  type: string;
+  title: string;
+  versions: OGCVersionInfo[];
+  update_policy: string;
+}
+
+interface OGCTilesetMetadata {
+  dataType: string;
+  crs: string;
+  title: string;
   description: string;
+  keywords: string[];
+  bounds: [number, number, number, number];
+  pixel_scale: number;
+  ogc_compliance: string;
 }
 
 export default function CustomTileLayer({ opacity = 0.7, zIndex = 1000 }: CustomTileLayerProps) {
   const map = useMap();
-  const layerRef = useRef<L.LayerGroup | null>(null);
-  const metadataRef = useRef<TileMetadata | null>(null);
-  const [metadataLoaded, setMetadataLoaded] = useState(false);
+  const layerRef = useRef<L.TileLayer | null>(null);
+  const [currentVersion, setCurrentVersion] = useState<string>('');
+  const [tilesBaseUrl, setTilesBaseUrl] = useState<string>('');
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [ogcMetadata, setOgcMetadata] = useState<OGCTilesetMetadata | null>(null);
+  const [useOGCFormat, setUseOGCFormat] = useState<boolean>(false);
 
-  // 載入圖磚元資料
+  // 初始化圖磚基礎 URL
   useEffect(() => {
-    const loadMetadata = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_TILES_BASE_URL;
+    if (baseUrl) {
+      setTilesBaseUrl(baseUrl);
+      console.log('圖磚基礎 URL:', baseUrl);
+    } else {
+      console.warn('未設定 NEXT_PUBLIC_TILES_BASE_URL 環境變數');
+    }
+  }, []);
+
+  // 檢查並載入 OGC TMS metadata
+  useEffect(() => {
+    if (!tilesBaseUrl) return;
+
+    const loadOGCMetadata = async () => {
       try {
-        console.log('開始載入圖磚元資料...');
-        const response = await fetch('/tiles/metadata.json');
+        console.log('檢查 OGC TMS metadata...');
+        const response = await fetch(`${tilesBaseUrl}/tilesetmetadata.json?t=${Date.now()}`);
+
         if (response.ok) {
           const metadata = await response.json();
-          metadataRef.current = metadata;
-          setMetadataLoaded(true);
-          console.log('自訂圖磚元資料載入成功:', metadata);
+          setOgcMetadata(metadata);
+          setUseOGCFormat(true);
+          console.log('發現 OGC TMS 格式，啟用標準相容模式');
+          return true;
+        }
+      } catch {
+        console.log('未找到 OGC metadata，嘗試舊版格式');
+      }
+
+      setUseOGCFormat(false);
+      return false;
+    };
+
+    loadOGCMetadata();
+  }, [tilesBaseUrl]);
+
+  // 載入版本資訊並檢查更新
+  useEffect(() => {
+    if (!tilesBaseUrl) return;
+
+    const checkVersion = async () => {
+      try {
+        if (useOGCFormat) {
+          // 使用 OGC TMS 格式
+          console.log('檢查 OGC TMS 版本...');
+          const response = await fetch(`${tilesBaseUrl}/versions/versions.json?t=${Date.now()}`);
+
+          if (response.ok) {
+            const versionsData: OGCVersionsCollection = await response.json();
+
+            if (versionsData.versions && versionsData.versions.length > 0) {
+              // 取得最新版本
+              const latestVersion = versionsData.versions[versionsData.versions.length - 1];
+
+              if (latestVersion.version !== currentVersion) {
+                console.log(`OGC TMS 版本更新: ${currentVersion} -> ${latestVersion.version}`);
+                setCurrentVersion(latestVersion.version);
+
+                // 載入版本特定的 metadata
+                try {
+                  const metadataResponse = await fetch(
+                    `${tilesBaseUrl}/${latestVersion.version}/metadata.json?t=${Date.now()}`
+                  );
+                  if (metadataResponse.ok) {
+                    const versionMetadata = await metadataResponse.json();
+                    setVersionInfo(versionMetadata);
+                  }
+                } catch (metadataError) {
+                  console.warn('載入版本 metadata 失敗:', metadataError);
+                }
+              }
+            }
+          } else {
+            console.warn('無法載入 OGC 版本資訊');
+          }
         } else {
-          console.warn('無法載入圖磚元資料，可能尚未生成圖磚');
-          setMetadataLoaded(false);
+          // 使用舊版格式
+          console.log('檢查舊版圖磚版本...');
+          const response = await fetch(`${tilesBaseUrl}/version.json?t=${Date.now()}`);
+
+          if (response.ok) {
+            const versionData = await response.json();
+            setVersionInfo(versionData);
+
+            if (versionData.version !== currentVersion) {
+              console.log(`圖磚版本更新: ${currentVersion} -> ${versionData.version}`);
+              setCurrentVersion(versionData.version);
+            }
+          } else {
+            console.warn('無法載入版本資訊，可能尚未生成圖磚');
+          }
         }
       } catch (error) {
-        console.warn('載入圖磚元資料失敗:', error);
-        setMetadataLoaded(false);
+        console.warn('載入版本資訊失敗:', error);
       }
     };
 
-    loadMetadata();
-  }, []);
+    // 立即檢查一次
+    checkVersion();
 
-  // 建立自訂圖磚圖層
+    // 每 30 秒檢查一次更新
+    const interval = setInterval(checkVersion, 30000);
+
+    return () => clearInterval(interval);
+  }, [tilesBaseUrl, currentVersion, useOGCFormat]);
+
+  // 建立版本化圖磚圖層
   useEffect(() => {
-    if (!map || !metadataLoaded || !metadataRef.current) {
-      console.log('地圖或元資料尚未準備好:', {
+    if (!map || !currentVersion || !tilesBaseUrl) {
+      console.log('地圖或版本資訊尚未準備好:', {
         map: !!map,
-        metadataLoaded,
-        metadata: !!metadataRef.current,
+        currentVersion,
+        tilesBaseUrl,
+        useOGCFormat,
+        hasVersionInfo: !!versionInfo,
+        hasOGCMetadata: !!ogcMetadata,
       });
       return;
     }
 
-    const metadata = metadataRef.current;
-    console.log('開始建立自訂圖磚圖層...');
+    // OGC 格式需要 metadata，舊格式需要 versionInfo
+    if ((useOGCFormat && !ogcMetadata) || (!useOGCFormat && !versionInfo)) {
+      console.log('等待 metadata 載入完成...');
+      return;
+    }
+
+    console.log(`開始建立${useOGCFormat ? 'OGC TMS' : '舊版'}圖磚圖層...`, currentVersion);
 
     // 檢查 Leaflet 是否可用
     if (typeof window === 'undefined' || !window.L) {
@@ -93,61 +202,77 @@ export default function CustomTileLayer({ opacity = 0.7, zIndex = 1000 }: Custom
       return;
     }
 
-    // 建立圖層群組
-    const layerGroup = new window.L.LayerGroup();
-
-    // 計算圖磚數量
-    const tilesX = Math.ceil(metadata.grid_size.width / metadata.tile_size);
-    const tilesY = Math.ceil(metadata.grid_size.height / metadata.tile_size);
-
-    console.log(`載入 ${tilesX} x ${tilesY} 個自訂圖磚`);
-
-    // 計算地理邊界（用於驗證）
-    const bounds = window.L.latLngBounds([
-      [metadata.bounds.south_west.lat, metadata.bounds.south_west.lon],
-      [metadata.bounds.north_east.lat, metadata.bounds.north_east.lon],
-    ]);
-
-    console.log('圖磚地理邊界:', bounds.toBBoxString());
-
-    // 為每個圖磚建立 ImageOverlay
-    for (let tileY = 0; tileY < tilesY; tileY++) {
-      for (let tileX = 0; tileX < tilesX; tileX++) {
-        // 計算這個圖磚的地理邊界
-        const tileBounds = calculateTileBounds(tileX, tileY, tilesX, tilesY, metadata.bounds);
-
-        // 圖磚檔案 URL
-        const tileUrl = `/tiles/tile_${tileX}_${tileY}.png`;
-
-        // 建立 ImageOverlay
-        const imageOverlay = new window.L.ImageOverlay(tileUrl, tileBounds, {
-          opacity: opacity,
-          interactive: false,
-          alt: `淤泥狀態圖磚 ${tileX}-${tileY}`,
-        });
-
-        // 加入錯誤處理
-        imageOverlay.on('error', () => {
-          console.warn(`圖磚載入失敗: tile_${tileX}_${tileY}.png`);
-        });
-
-        imageOverlay.on('load', () => {
-          console.log(`圖磚載入成功: tile_${tileX}_${tileY}.png`);
-        });
-
-        // 加入到圖層群組
-        layerGroup.addLayer(imageOverlay);
-      }
+    // 移除舊圖層
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
     }
 
-    // 設定 z-index
-    layerGroup.setZIndex?.(zIndex);
+    // 計算地理邊界
+    let bounds: [[number, number], [number, number]];
+
+    if (useOGCFormat && ogcMetadata) {
+      // OGC 格式：bounds 是 [minLon, minLat, maxLon, maxLat]
+      const [minLon, minLat, maxLon, maxLat] = ogcMetadata.bounds;
+      bounds = [
+        [minLat, minLon],
+        [maxLat, maxLon],
+      ];
+    } else if (versionInfo) {
+      // 舊格式
+      bounds = [
+        [versionInfo.bounds.south_west.lat, versionInfo.bounds.south_west.lon],
+        [versionInfo.bounds.north_east.lat, versionInfo.bounds.north_east.lon],
+      ];
+    } else {
+      console.error('無法確定邊界資訊');
+      return;
+    }
+
+    // 建立圖磚圖層 URL 模板
+    const tileUrlTemplate = `${tilesBaseUrl}/${currentVersion}/0/{x}/{y}.png?t=${Date.now()}`;
+
+    // 建立 TileLayer 配置 - 針對零星圖磚優化
+    const tileLayerOptions: L.TileLayerOptions = {
+      opacity: opacity,
+      zIndex: zIndex,
+      bounds: window.L.latLngBounds(bounds),
+      minZoom: 10,
+      maxZoom: 18,
+      tileSize: 256,
+      // 圖磚座標系統設定
+      tms: false,
+      // 零星圖磚支援 - 404 錯誤不顯示替代圖磚
+      errorTileUrl: '',
+    };
+
+    // 建立 TileLayer
+    const tileLayer = new window.L.TileLayer(tileUrlTemplate, tileLayerOptions);
+
+    // 零星圖磚錯誤處理 - 靜默處理 404 錯誤
+    tileLayer.on('tileerror', (e: L.TileErrorEvent) => {
+      // 對於零星圖磚，404 錯誤是正常的（表示該位置沒有資料）
+      const error = e.error as Error & { status?: number };
+      if (error && error.status === 404) {
+        console.debug('零星圖磚：該位置無資料', e.coords);
+      } else {
+        console.warn('圖磚載入失敗:', e.coords, e.error);
+      }
+    });
+
+    tileLayer.on('tileload', (e: L.TileEvent) => {
+      console.debug('圖磚載入成功:', e.coords);
+    });
 
     // 加入到地圖
-    layerGroup.addTo(map);
-    layerRef.current = layerGroup;
+    tileLayer.addTo(map);
+    layerRef.current = tileLayer;
 
-    console.log('自訂圖磚圖層已載入到地圖');
+    if (useOGCFormat && ogcMetadata) {
+      console.log(`OGC TMS 圖磚圖層已載入: ${ogcMetadata.title}`);
+      console.log(`標準相容性: ${ogcMetadata.ogc_compliance}`);
+    } else {
+      console.log('舊版圖磚圖層已載入到地圖');
+    }
 
     // 清理函數
     return () => {
@@ -156,50 +281,14 @@ export default function CustomTileLayer({ opacity = 0.7, zIndex = 1000 }: Custom
         layerRef.current = null;
       }
     };
-  }, [map, metadataLoaded, zIndex, opacity]); // 加入 opacity 作為依賴
+  }, [map, currentVersion, tilesBaseUrl, versionInfo, ogcMetadata, useOGCFormat, zIndex, opacity]);
 
   // 處理透明度變化
   useEffect(() => {
-    if (layerRef.current) {
-      layerRef.current.eachLayer((layer: L.Layer & { setOpacity?: (opacity: number) => void }) => {
-        if (layer.setOpacity) {
-          layer.setOpacity(opacity);
-        }
-      });
+    if (layerRef.current && layerRef.current.setOpacity) {
+      layerRef.current.setOpacity(opacity);
     }
   }, [opacity]);
 
   return null;
-}
-
-/**
- * 計算單個圖磚的地理邊界
- */
-function calculateTileBounds(
-  tileX: number,
-  tileY: number,
-  totalTilesX: number,
-  totalTilesY: number,
-  bounds: TileMetadata['bounds']
-): [[number, number], [number, number]] {
-  const { north_west, north_east, south_west } = bounds;
-
-  // 計算總的經緯度範圍
-  const totalLatRange = north_west.lat - south_west.lat;
-  const totalLonRange = north_east.lon - north_west.lon;
-
-  // 計算單個圖磚的經緯度大小
-  const tileLatSize = totalLatRange / totalTilesY;
-  const tileLonSize = totalLonRange / totalTilesX;
-
-  // 計算這個圖磚的邊界
-  const north = north_west.lat - tileY * tileLatSize;
-  const south = north_west.lat - (tileY + 1) * tileLatSize;
-  const west = north_west.lon + tileX * tileLonSize;
-  const east = north_west.lon + (tileX + 1) * tileLonSize;
-
-  return [
-    [south, west],
-    [north, east],
-  ];
 }

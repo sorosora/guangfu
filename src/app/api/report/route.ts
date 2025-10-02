@@ -15,6 +15,7 @@ import {
   executeAreaOfEffectUpdate,
   getRecentReportsCount,
 } from '@/lib/trust-algorithm';
+import { markGridsAsChanged } from '@/lib/redis';
 import { getDefaultAreaConfig } from '@/config/areas';
 import { gridToGps } from '@/lib/coordinates';
 
@@ -71,13 +72,16 @@ export async function POST(request: NextRequest) {
     // 8. 批次更新 Redis 資料
     await gridStorage.updateGrids(updatedGridData);
 
-    // 9. 非同步記錄到 Supabase（不阻塞回應）
+    // 9. 標記變更的網格（用於增量圖磚生成）
+    await markGridsAsChanged(allGridIds);
+
+    // 10. 非同步記錄到 Supabase（不阻塞回應）
     insertReport(gridCoordinates.x, gridCoordinates.y, state, lat, lon).catch((error) => {
       console.error('Supabase 記錄失敗:', error);
       // 這裡可以加入錯誤監控服務，如 Sentry
     });
 
-    // 10. 回應成功
+    // 11. 回應成功
     const stateText = state === 1 ? '有淤泥' : '已清除';
     return NextResponse.json(
       createSuccessResponse(`回報成功：${stateText}`, {
