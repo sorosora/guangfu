@@ -29,8 +29,6 @@ export const gpsInfoAtom = atom<GPSInfo>({
 export interface EnvironmentInfo {
   nodeEnv: string | undefined;
   vercelEnv: string | undefined;
-  hasTestAreaConfig: boolean;
-  testAreaEnvVars: Record<string, string | undefined>;
   userAgent: string;
   url: string;
   timestamp: number;
@@ -39,8 +37,6 @@ export interface EnvironmentInfo {
 export const environmentInfoAtom = atom<EnvironmentInfo>({
   nodeEnv: undefined,
   vercelEnv: undefined,
-  hasTestAreaConfig: false,
-  testAreaEnvVars: {},
   userAgent: '',
   url: '',
   timestamp: 0, // 將在客戶端初始化時設定

@@ -20,17 +20,19 @@ export const redis = new Redis({
 
 // Redis 金鑰生成器
 export const RedisKeys = {
-  // 優化後：單一 hash per 網格
-  gridData: (gridId: string) => `grid:${gridId}`,
+  // 區域化網格資料：grid:{areaName}:{gridId}
+  gridData: (areaName: string, gridId: string) => `grid:${areaName}:${gridId}`,
 
-  // 變更追蹤（增量更新使用）
-  changedGrids: () => 'changed_grids',
-  tileVersion: () => 'tile_version',
-  lastTileGeneration: () => 'last_tile_gen',
+  // 變更追蹤（增量更新使用）- 也需要區域化
+  changedGrids: (areaName: string) => `changed_grids:${areaName}`,
+  tileVersion: (areaName: string) => `tile_version:${areaName}`,
+  lastTileGeneration: (areaName: string) => `last_tile_gen:${areaName}`,
 
-  // 圖磚快取（Phase 1 優化）
-  tileCache: (tileX: number, tileY: number) => `tile_cache:${tileX}_${tileY}`,
-  tileMeta: (tileX: number, tileY: number) => `tile_meta:${tileX}_${tileY}`,
+  // 圖磚快取（Phase 1 優化）- 也需要區域化
+  tileCache: (areaName: string, tileX: number, tileY: number) =>
+    `tile_cache:${areaName}:${tileX}_${tileY}`,
+  tileMeta: (areaName: string, tileX: number, tileY: number) =>
+    `tile_meta:${areaName}:${tileX}_${tileY}`,
 };
 
 // 網格資料結構
@@ -58,7 +60,10 @@ export interface TileCache {
 }
 
 // 批次讀取網格資料
-export async function getGridData(gridIds: string[]): Promise<Map<string, GridData>> {
+export async function getGridData(
+  areaName: string,
+  gridIds: string[]
+): Promise<Map<string, GridData>> {
   if (gridIds.length === 0) {
     return new Map();
   }
@@ -68,7 +73,7 @@ export async function getGridData(gridIds: string[]): Promise<Map<string, GridDa
 
   for (const gridId of gridIds) {
     pipeline.hmget(
-      RedisKeys.gridData(gridId),
+      RedisKeys.gridData(areaName, gridId),
       'score0',
       'score1',
       'lastUpdate0',
@@ -119,7 +124,10 @@ export async function getGridData(gridIds: string[]): Promise<Map<string, GridDa
 }
 
 // 批次寫入網格資料
-export async function setGridData(updates: Map<string, Partial<GridData>>): Promise<void> {
+export async function setGridData(
+  areaName: string,
+  updates: Map<string, Partial<GridData>>
+): Promise<void> {
   if (updates.size === 0) {
     return;
   }
@@ -139,7 +147,7 @@ export async function setGridData(updates: Map<string, Partial<GridData>>): Prom
 
     // 只有當有資料要更新時才執行
     if (Object.keys(hashData).length > 0) {
-      pipeline.hmset(RedisKeys.gridData(gridId), hashData);
+      pipeline.hmset(RedisKeys.gridData(areaName, gridId), hashData);
     }
   }
 
@@ -147,8 +155,8 @@ export async function setGridData(updates: Map<string, Partial<GridData>>): Prom
 }
 
 // 讀取單個網格資料
-export async function getSingleGridData(gridId: string): Promise<GridData> {
-  const gridDataMap = await getGridData([gridId]);
+export async function getSingleGridData(areaName: string, gridId: string): Promise<GridData> {
+  const gridDataMap = await getGridData(areaName, [gridId]);
   return (
     gridDataMap.get(gridId) || {
       score0: 0,
@@ -161,63 +169,72 @@ export async function getSingleGridData(gridId: string): Promise<GridData> {
 }
 
 // 更新單個網格資料
-export async function setSingleGridData(gridId: string, data: Partial<GridData>): Promise<void> {
+export async function setSingleGridData(
+  areaName: string,
+  gridId: string,
+  data: Partial<GridData>
+): Promise<void> {
   const updates = new Map<string, Partial<GridData>>();
   updates.set(gridId, data);
-  await setGridData(updates);
+  await setGridData(areaName, updates);
 }
 
 // 變更追蹤相關函數
 
 /**
  * 標記網格為已變更（用於增量更新）
+ * @param areaName 區域名稱
  * @param gridIds 變更的網格 ID 陣列
  */
-export async function markGridsAsChanged(gridIds: string[]): Promise<void> {
+export async function markGridsAsChanged(areaName: string, gridIds: string[]): Promise<void> {
   if (gridIds.length === 0) return;
 
   const pipeline = redis.pipeline();
 
   for (const gridId of gridIds) {
-    pipeline.sadd(RedisKeys.changedGrids(), gridId);
+    pipeline.sadd(RedisKeys.changedGrids(areaName), gridId);
   }
 
   // 設定 TTL 避免長期累積（1小時）
-  pipeline.expire(RedisKeys.changedGrids(), 3600);
+  pipeline.expire(RedisKeys.changedGrids(areaName), 3600);
 
   await pipeline.exec();
 }
 
 /**
  * 獲取有變更的網格 ID 列表
+ * @param areaName 區域名稱
  * @returns 變更的網格 ID 陣列
  */
-export async function getChangedGrids(): Promise<string[]> {
-  const gridIds = await redis.smembers(RedisKeys.changedGrids());
+export async function getChangedGrids(areaName: string): Promise<string[]> {
+  const gridIds = await redis.smembers(RedisKeys.changedGrids(areaName));
   return gridIds || [];
 }
 
 /**
  * 清除變更標記
+ * @param areaName 區域名稱
  */
-export async function clearChangedGrids(): Promise<void> {
-  await redis.del(RedisKeys.changedGrids());
+export async function clearChangedGrids(areaName: string): Promise<void> {
+  await redis.del(RedisKeys.changedGrids(areaName));
 }
 
 /**
  * 設定圖磚版本號
+ * @param areaName 區域名稱
  * @param version 版本號
  */
-export async function setTileVersion(version: string): Promise<void> {
-  await redis.set(RedisKeys.tileVersion(), version);
+export async function setTileVersion(areaName: string, version: string): Promise<void> {
+  await redis.set(RedisKeys.tileVersion(areaName), version);
 }
 
 /**
  * 獲取當前圖磚版本號
+ * @param areaName 區域名稱
  * @returns 版本號
  */
-export async function getTileVersion(): Promise<string | null> {
-  return await redis.get(RedisKeys.tileVersion());
+export async function getTileVersion(areaName: string): Promise<string | null> {
+  return await redis.get(RedisKeys.tileVersion(areaName));
 }
 
 // ==================== 圖磚快取相關函數 ====================
@@ -246,14 +263,19 @@ export function calculateGridChecksum(gridStates: Map<string, GridData>): string
 
 /**
  * 讀取圖磚元資料
+ * @param areaName 區域名稱
  * @param tileX 圖磚 X 座標
  * @param tileY 圖磚 Y 座標
  * @returns 圖磚元資料或 null
  */
-export async function getTileMeta(tileX: number, tileY: number): Promise<TileMeta | null> {
+export async function getTileMeta(
+  areaName: string,
+  tileX: number,
+  tileY: number
+): Promise<TileMeta | null> {
   try {
     const result = await redis.hmget(
-      RedisKeys.tileMeta(tileX, tileY),
+      RedisKeys.tileMeta(areaName, tileX, tileY),
       'version',
       'lastUpdate',
       'gridChecksum',
@@ -273,21 +295,26 @@ export async function getTileMeta(tileX: number, tileY: number): Promise<TileMet
       size: parseInt((result[4] as string) || '0'),
     };
   } catch (error) {
-    console.error(`讀取圖磚元資料失敗 (${tileX}, ${tileY}):`, error);
+    console.error(`讀取圖磚元資料失敗 (${areaName}:${tileX}, ${tileY}):`, error);
     return null;
   }
 }
 
 /**
  * 讀取圖磚快取資料
+ * @param areaName 區域名稱
  * @param tileX 圖磚 X 座標
  * @param tileY 圖磚 Y 座標
  * @returns 圖磚快取資料或 null
  */
-export async function getTileCache(tileX: number, tileY: number): Promise<TileCache | null> {
+export async function getTileCache(
+  areaName: string,
+  tileX: number,
+  tileY: number
+): Promise<TileCache | null> {
   try {
     const result = await redis.hmget(
-      RedisKeys.tileCache(tileX, tileY),
+      RedisKeys.tileCache(areaName, tileX, tileY),
       'pngData',
       'contentType',
       'compressed'
@@ -303,13 +330,14 @@ export async function getTileCache(tileX: number, tileY: number): Promise<TileCa
       compressed: (result[2] as string) === 'true',
     };
   } catch (error) {
-    console.error(`讀取圖磚快取失敗 (${tileX}, ${tileY}):`, error);
+    console.error(`讀取圖磚快取失敗 (${areaName}:${tileX}, ${tileY}):`, error);
     return null;
   }
 }
 
 /**
  * 儲存圖磚到快取
+ * @param areaName 區域名稱
  * @param tileX 圖磚 X 座標
  * @param tileY 圖磚 Y 座標
  * @param pngData Base64 編碼的 PNG 資料
@@ -317,6 +345,7 @@ export async function getTileCache(tileX: number, tileY: number): Promise<TileCa
  * @param version 版本號
  */
 export async function setTileCache(
+  areaName: string,
   tileX: number,
   tileY: number,
   pngData: string,
@@ -331,7 +360,7 @@ export async function setTileCache(
   const pipeline = redis.pipeline();
 
   // 儲存元資料
-  pipeline.hmset(RedisKeys.tileMeta(tileX, tileY), {
+  pipeline.hmset(RedisKeys.tileMeta(areaName, tileX, tileY), {
     version,
     lastUpdate: now,
     gridChecksum: checksum,
@@ -340,32 +369,34 @@ export async function setTileCache(
   });
 
   // 儲存快取資料
-  pipeline.hmset(RedisKeys.tileCache(tileX, tileY), {
+  pipeline.hmset(RedisKeys.tileCache(areaName, tileX, tileY), {
     pngData,
     contentType: 'image/png',
     compressed: false,
   });
 
   // 設定過期時間（7 天）
-  pipeline.expire(RedisKeys.tileMeta(tileX, tileY), 7 * 24 * 3600);
-  pipeline.expire(RedisKeys.tileCache(tileX, tileY), 7 * 24 * 3600);
+  pipeline.expire(RedisKeys.tileMeta(areaName, tileX, tileY), 7 * 24 * 3600);
+  pipeline.expire(RedisKeys.tileCache(areaName, tileX, tileY), 7 * 24 * 3600);
 
   await pipeline.exec();
 }
 
 /**
  * 檢查圖磚是否需要重新生成
+ * @param areaName 區域名稱
  * @param tileX 圖磚 X 座標
  * @param tileY 圖磚 Y 座標
  * @param currentGridStates 當前網格狀態
  * @returns 是否需要重新生成
  */
 export async function isTileStale(
+  areaName: string,
   tileX: number,
   tileY: number,
   currentGridStates: Map<string, GridData>
 ): Promise<boolean> {
-  const tileMeta = await getTileMeta(tileX, tileY);
+  const tileMeta = await getTileMeta(areaName, tileX, tileY);
 
   if (!tileMeta) {
     // 沒有快取，需要生成
@@ -381,12 +412,17 @@ export async function isTileStale(
 
 /**
  * 刪除圖磚快取
+ * @param areaName 區域名稱
  * @param tileX 圖磚 X 座標
  * @param tileY 圖磚 Y 座標
  */
-export async function deleteTileCache(tileX: number, tileY: number): Promise<void> {
+export async function deleteTileCache(
+  areaName: string,
+  tileX: number,
+  tileY: number
+): Promise<void> {
   const pipeline = redis.pipeline();
-  pipeline.del(RedisKeys.tileMeta(tileX, tileY));
-  pipeline.del(RedisKeys.tileCache(tileX, tileY));
+  pipeline.del(RedisKeys.tileMeta(areaName, tileX, tileY));
+  pipeline.del(RedisKeys.tileCache(areaName, tileX, tileY));
   await pipeline.exec();
 }

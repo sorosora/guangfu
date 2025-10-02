@@ -128,18 +128,6 @@ guangfu/
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_TILES_BASE_URL=
-
-# 測試區域配置（可選，用於開發測試）
-NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT=
-NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON=
-NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT=
-NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON=
-NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT=
-NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON=
-NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT=
-NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON=
-NEXT_PUBLIC_TEST_AREA_CENTER_LAT=
-NEXT_PUBLIC_TEST_AREA_CENTER_LON=
 ```
 
 **🔒 後端私密變數** (僅伺服器端)
@@ -170,55 +158,30 @@ CLOUDFLARE_R2_BUCKET_NAME=
 - `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
 - `CLOUDFLARE_R2_BUCKET_NAME`
 
-### 測試區域配置
+#### 動態測試區域功能
 
-為保護開發者隱私，測試區域座標可透過環境變數設定，而非硬編碼於原始碼中。
+1. **透過除錯面板建立測試區域**
+   - 在開發或 Preview 環境中開啟除錯面板
+   - 使用 GPS 定位自動建立測試區域
+   - 支援自訂區域名稱
 
-#### 設定步驟
+2. **Redis 儲存管理**
+   - 測試區域配置儲存在 Upstash Redis 中
+   - 支援多個測試區域並列存在
+   - 可隨時切換或刪除測試區域
 
-1. **確定測試區域**
-   - 選擇您當前位置附近的區域
-   - 建議使用與光復鄉相同的 4km × 3km 尺寸
-   - 確保測試區域涵蓋您能實際到達的範圍
+3. **API 管理介面**
+   - `GET /api/test-areas` - 獲取所有測試區域
+   - `POST /api/test-areas` - 建立新測試區域
+   - `DELETE /api/test-areas/[id]` - 刪除測試區域
 
-2. **獲取座標**
-   - 使用 Google Maps 或其他地圖工具
-   - 確定四個角落的經緯度座標
-   - 計算區域中心點座標
+#### 使用方式
 
-3. **設定環境變數**
-   - 在 `.env.local` 中加入所有測試區域環境變數
-   - 參考 `.env.local.example` 中的範例格式
-   - 確保所有座標都在有效範圍內（緯度 -90 到 90，經度 -180 到 180）
-
-4. **驗證配置**
-   - 啟動開發服務器：`yarn run dev`
-   - 確認地圖顯示您設定的測試區域
-
-#### 環境變數說明
-
-```env
-# 四個角落座標
-NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT=25.055000  # 西北角緯度
-NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON=121.510000  # 西北角經度
-NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT=25.055000  # 東北角緯度
-NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON=121.550000  # 東北角經度
-NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT=25.020000  # 西南角緯度
-NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON=121.510000  # 西南角經度
-NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT=25.020000  # 東南角緯度
-NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON=121.550000  # 東南角經度
-
-# 中心點座標
-NEXT_PUBLIC_TEST_AREA_CENTER_LAT=25.037500     # 中心點緯度
-NEXT_PUBLIC_TEST_AREA_CENTER_LON=121.530000    # 中心點經度
-```
-
-#### 注意事項
-
-- 測試區域座標僅存在於您的 `.env.local` 檔案中
-- `.env.local` 已被 `.gitignore` 忽略，不會被提交到 Git
-- 如未設定環境變數，將使用程式碼中的預設測試區域
-- 測試區域功能與光復鄉保持完全相同的精度和功能
+1. **啟動開發服務器**：`yarn run dev`
+2. **開啟除錯面板**（左上角蟲蟲圖示）
+3. **切換到「控制」分頁**
+4. **輸入測試區域名稱並點擊「建立 GPS 測試區域」**
+5. **系統會自動以當前位置為中心建立 4km×3km 測試區域**
 
 ## 版本控制指引
 

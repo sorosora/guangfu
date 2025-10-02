@@ -66,11 +66,14 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_BUCKET_NAME: ${{ secrets.CLOUDFLARE_R2_BUCKET_NAME }}
           CLOUDFLARE_R2_ENDPOINTS: ${{ secrets.CLOUDFLARE_R2_ENDPOINTS }}
+          # 多區域圖磚生成配置
+          TILE_GENERATION_AREAS: ${{ vars.TILE_GENERATION_AREAS || 'guangfu' }}
         run: |
-          echo "🚀 啟動極簡圖磚生成器 v2.0"
+          echo "🚀 啟動多區域圖磚生成器 v3.1"
+          echo "🌍 啟用區域: ${TILE_GENERATION_AREAS:-guangfu}"
           start_time=$(date +%s)
 
-          # 執行極簡圖磚生成
+          # 執行多區域圖磚生成
           python scripts/generate_tiles.py
 
           end_time=$(date +%s)

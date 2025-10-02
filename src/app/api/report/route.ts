@@ -17,6 +17,7 @@ import {
 } from '@/lib/trust-algorithm';
 import { markGridsAsChanged } from '@/lib/redis';
 import { getDefaultAreaConfig } from '@/config/areas';
+// test areas functions removed as they're not used in this route
 import { gridToGps } from '@/lib/coordinates';
 
 /**
@@ -26,19 +27,28 @@ export async function POST(request: NextRequest) {
   try {
     // 1. 解析和驗證請求資料
     const body = await request.json();
-    const { lat, lon, state } = validateReportRequest(body);
+    const { lat, lon, state, areaConfig: clientAreaConfig } = validateReportRequest(body);
 
-    // 2. 檢查座標是否在允許範圍內
+    // 2. 決定使用哪個區域配置
     const location = { lat, lon };
-    const areaConfig = getDefaultAreaConfig();
+    let areaConfig;
 
+    if (clientAreaConfig) {
+      // 使用前端傳來的區域配置
+      areaConfig = clientAreaConfig;
+    } else {
+      // 預設使用光復鄉配置
+      areaConfig = getDefaultAreaConfig();
+    }
+
+    // 3. 檢查座標是否在當前選擇的區域範圍內
     if (!isWithinBounds(location, areaConfig)) {
-      return NextResponse.json(createErrorResponse(ErrorMessages.COORDINATES_OUT_OF_BOUNDS), {
+      return NextResponse.json(createErrorResponse(`座標超出${areaConfig.displayName}範圍`), {
         status: HttpStatus.UNPROCESSABLE_ENTITY,
       });
     }
 
-    // 3. 轉換 GPS 座標為網格座標
+    // 4. 轉換 GPS 座標為網格座標
     const gridCoordinates = gpsToGrid(location, areaConfig);
     if (!gridCoordinates) {
       return NextResponse.json(createErrorResponse('座標轉換失敗'), {
@@ -46,19 +56,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. 獲取鄰近網格座標（3x3 範圍效應）
+    // 5. 獲取鄰近網格座標（3x3 範圍效應）
     const neighborGrids = getNeighborGrids(gridCoordinates, areaConfig);
     const allGridIds = neighborGrids.map((grid) => getGridId(grid));
 
-    // 5. 計算基礎權重
+    // 6. 計算基礎權重
     const gridCenter = gridToGps(gridCoordinates, areaConfig);
     const recentReportsCount = await getRecentReportsCount(location);
     const baseWeight = calculateBaseWeight(location, gridCenter, recentReportsCount);
 
-    // 6. 讀取當前網格資料
-    const currentGridData = await gridStorage.getGridWithNeighbors(gridCoordinates);
+    // 7. 讀取當前網格資料
+    const currentGridData = await gridStorage.getGridWithNeighbors(
+      areaConfig.name,
+      gridCoordinates,
+      areaConfig
+    );
 
-    // 7. 執行信任演算法和範圍效應更新
+    // 8. 執行信任演算法和範圍效應更新
     const currentTimestamp = Date.now();
     const updatedGridData = executeAreaOfEffectUpdate(
       gridCoordinates,
@@ -69,19 +83,19 @@ export async function POST(request: NextRequest) {
       currentTimestamp
     );
 
-    // 8. 批次更新 Redis 資料
-    await gridStorage.updateGrids(updatedGridData);
+    // 9. 批次更新 Redis 資料
+    await gridStorage.updateGrids(areaConfig.name, updatedGridData);
 
-    // 9. 標記變更的網格（用於增量圖磚生成）
-    await markGridsAsChanged(allGridIds);
+    // 10. 標記變更的網格（用於增量圖磚生成）
+    await markGridsAsChanged(areaConfig.name, allGridIds);
 
-    // 10. 非同步記錄到 Supabase（不阻塞回應）
+    // 11. 非同步記錄到 Supabase（不阻塞回應）
     insertReport(gridCoordinates.x, gridCoordinates.y, state, lat, lon).catch((error) => {
       console.error('Supabase 記錄失敗:', error);
       // 這裡可以加入錯誤監控服務，如 Sentry
     });
 
-    // 11. 回應成功
+    // 12. 回應成功
     const stateText = state === 1 ? '有淤泥' : '已清除';
     return NextResponse.json(
       createSuccessResponse(`回報成功：${stateText}`, {

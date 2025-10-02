@@ -1,7 +1,7 @@
 import { GridCoordinates } from '@/types/map';
 import { GridData, getGridData, setGridData } from './redis';
 import { getGridId, getNeighborGrids } from './coordinates';
-import { getDefaultAreaConfig } from '@/config/areas';
+import { AreaConfig } from '@/config/areas';
 
 /**
  * 網格儲存服務 - 處理網格資料的高階操作
@@ -9,31 +9,38 @@ import { getDefaultAreaConfig } from '@/config/areas';
 export class GridStorageService {
   /**
    * 讀取單個網格及其鄰近網格的資料
+   * @param areaName 區域名稱
    * @param centerGrid 中心網格座標
+   * @param areaConfig 區域配置
    * @returns 網格資料對應表
    */
-  async getGridWithNeighbors(centerGrid: GridCoordinates): Promise<Map<string, GridData>> {
-    const areaConfig = getDefaultAreaConfig();
+  async getGridWithNeighbors(
+    areaName: string,
+    centerGrid: GridCoordinates,
+    areaConfig: AreaConfig
+  ): Promise<Map<string, GridData>> {
     const allGrids = getNeighborGrids(centerGrid, areaConfig);
     const gridIds = allGrids.map((grid) => getGridId(grid));
 
-    return await getGridData(gridIds);
+    return await getGridData(areaName, gridIds);
   }
 
   /**
    * 批次更新網格資料
+   * @param areaName 區域名稱
    * @param updates 要更新的網格資料對應表
    */
-  async updateGrids(updates: Map<string, Partial<GridData>>): Promise<void> {
-    await setGridData(updates);
+  async updateGrids(areaName: string, updates: Map<string, Partial<GridData>>): Promise<void> {
+    await setGridData(areaName, updates);
   }
 
   /**
    * 獲取所有網格的最終狀態（用於圖磚生成）
+   * @param areaName 區域名稱
+   * @param areaConfig 區域配置
    * @returns 網格狀態對應表 (gridId -> finalState)
    */
-  async getAllGridStates(): Promise<Map<string, 0 | 1>> {
-    const areaConfig = getDefaultAreaConfig();
+  async getAllGridStates(areaName: string, areaConfig: AreaConfig): Promise<Map<string, 0 | 1>> {
     const { gridSize } = areaConfig;
 
     // 生成所有可能的網格 ID
@@ -50,7 +57,7 @@ export class GridStorageService {
 
     for (let i = 0; i < allGridIds.length; i += batchSize) {
       const batchIds = allGridIds.slice(i, i + batchSize);
-      const batchData = await getGridData(batchIds);
+      const batchData = await getGridData(areaName, batchIds);
 
       for (const [gridId, data] of batchData) {
         stateMap.set(gridId, data.finalState);
@@ -62,11 +69,13 @@ export class GridStorageService {
 
   /**
    * 獲取指定區域內的網格狀態統計
+   * @param areaName 區域名稱
    * @param startGrid 起始網格座標
    * @param endGrid 結束網格座標
    * @returns 統計資料
    */
   async getAreaStatistics(
+    areaName: string,
     startGrid: GridCoordinates,
     endGrid: GridCoordinates
   ): Promise<{
@@ -83,7 +92,7 @@ export class GridStorageService {
       }
     }
 
-    const gridData = await getGridData(gridIds);
+    const gridData = await getGridData(areaName, gridIds);
 
     let clearedCount = 0;
     let muddyCount = 0;
@@ -109,9 +118,10 @@ export class GridStorageService {
 
   /**
    * 重置指定網格的資料（用於測試或維護）
+   * @param areaName 區域名稱
    * @param gridIds 要重置的網格 ID 陣列
    */
-  async resetGrids(gridIds: string[]): Promise<void> {
+  async resetGrids(areaName: string, gridIds: string[]): Promise<void> {
     const resetData = new Map<string, Partial<GridData>>();
 
     for (const gridId of gridIds) {
@@ -124,15 +134,21 @@ export class GridStorageService {
       });
     }
 
-    await setGridData(resetData);
+    await setGridData(areaName, resetData);
   }
 
   /**
    * 獲取熱點區域（回報活動最頻繁的區域）
+   * @param areaName 區域名稱
+   * @param areaConfig 區域配置
    * @param topN 返回前 N 個熱點
    * @returns 熱點網格陣列
    */
-  async getHotspotGrids(topN: number = 10): Promise<
+  async getHotspotGrids(
+    areaName: string,
+    areaConfig: AreaConfig,
+    topN: number = 10
+  ): Promise<
     Array<{
       gridId: string;
       grid: GridCoordinates;
@@ -143,7 +159,6 @@ export class GridStorageService {
     // 這個方法需要遍歷所有網格來找出活動最頻繁的區域
     // 在實際應用中，可能需要額外的索引或快取來優化效能
 
-    const areaConfig = getDefaultAreaConfig();
     const { gridSize } = areaConfig;
 
     const hotspots: Array<{
@@ -172,7 +187,7 @@ export class GridStorageService {
           }
         }
 
-        const batchData = await getGridData(batchGridIds);
+        const batchData = await getGridData(areaName, batchGridIds);
 
         for (let i = 0; i < batchGridIds.length; i++) {
           const gridId = batchGridIds[i];

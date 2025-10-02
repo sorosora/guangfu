@@ -5,31 +5,14 @@ import {
   PerformanceInfo,
   DebugLog,
 } from '@/stores/debug-store';
-import { hasTestAreaConfiguration } from '@/lib/environment';
 
 /**
  * 收集環境資訊
  */
 export function collectEnvironmentInfo(): EnvironmentInfo {
-  // 收集測試區域環境變數
-  const testAreaEnvVars = {
-    NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT: process.env.NEXT_PUBLIC_TEST_AREA_NORTHWEST_LAT,
-    NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON: process.env.NEXT_PUBLIC_TEST_AREA_NORTHWEST_LON,
-    NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT: process.env.NEXT_PUBLIC_TEST_AREA_NORTHEAST_LAT,
-    NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON: process.env.NEXT_PUBLIC_TEST_AREA_NORTHEAST_LON,
-    NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT: process.env.NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LAT,
-    NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON: process.env.NEXT_PUBLIC_TEST_AREA_SOUTHWEST_LON,
-    NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT: process.env.NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LAT,
-    NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON: process.env.NEXT_PUBLIC_TEST_AREA_SOUTHEAST_LON,
-    NEXT_PUBLIC_TEST_AREA_CENTER_LAT: process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LAT,
-    NEXT_PUBLIC_TEST_AREA_CENTER_LON: process.env.NEXT_PUBLIC_TEST_AREA_CENTER_LON,
-  };
-
   return {
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
-    hasTestAreaConfig: hasTestAreaConfiguration(),
-    testAreaEnvVars,
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
     url: typeof window !== 'undefined' ? window.location.href : '',
     timestamp: typeof window !== 'undefined' ? Date.now() : 0,
@@ -210,16 +193,9 @@ export function exportDiagnosticInfo(
     '## 環境資訊',
     `NODE_ENV: ${envInfo.nodeEnv || 'undefined'}`,
     `NEXT_PUBLIC_VERCEL_ENV: ${envInfo.vercelEnv || 'undefined'}`,
-    `測試區域配置: ${envInfo.hasTestAreaConfig ? '完整' : '不完整'}`,
     `用戶代理: ${envInfo.userAgent}`,
     `網址: ${envInfo.url}`,
-    '',
-    '## 測試區域環境變數',
   ];
-
-  Object.entries(envInfo.testAreaEnvVars).forEach(([key, value]) => {
-    lines.push(`${key}: ${value || 'undefined'}`);
-  });
 
   lines.push(
     '',

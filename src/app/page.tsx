@@ -11,7 +11,9 @@ import { WelcomeButtons } from '@/components/ui/welcome-buttons';
 import { getCurrentPosition, watchPosition, clearWatch } from '@/lib/geolocation';
 import { isWithinBounds } from '@/lib/coordinates';
 import { Location, ReportData, LayerVisibility } from '@/types/map';
-import { getDefaultAreaConfig, AreaMode, AVAILABLE_AREAS } from '@/config/areas';
+import { getDefaultAreaConfig } from '@/config/areas';
+import { useAtom } from 'jotai';
+import { currentAreaConfigAtom, currentAreaDisplayNameAtom } from '@/stores/area-store';
 import { submitReportWithRetry, ApiError } from '@/lib/api-client';
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
 import { MapRef } from '@/components/Map/MapContainer';
@@ -48,11 +50,11 @@ export default function Home() {
   const mapRef = useRef<MapRef>(null);
   const currentAreaConfigRef = useRef(getDefaultAreaConfig());
 
-  // 區域配置狀態
-  const [currentAreaConfig, setCurrentAreaConfig] = useState(() => getDefaultAreaConfig());
-  const [currentAreaMode, setCurrentAreaMode] = useState<AreaMode>(
-    () => getDefaultAreaConfig().name as AreaMode
-  );
+  // 使用 Jotai 管理區域狀態
+  const [currentAreaConfig] = useAtom(currentAreaConfigAtom);
+  const [currentAreaDisplayName] = useAtom(currentAreaDisplayNameAtom);
+
+  // 區域配置狀態已完全由 Jotai 管理
 
   // UI 狀態
   const [isClient, setIsClient] = useState(false);
@@ -89,24 +91,22 @@ export default function Home() {
       setUserLocation(location);
       setAppState('granted');
 
-      // 使用 ref 中的當前區域配置
-      const areaConfig = currentAreaConfigRef.current;
-      const withinBounds = isWithinBounds(location, areaConfig);
+      // 使用當前的區域配置
+      const withinBounds = isWithinBounds(location, currentAreaConfig);
       isWithinBoundsRef.current = withinBounds;
 
       if (!withinBounds) {
-        toast.warning(`您不在${areaConfig.displayName}範圍內，某些功能可能無法使用`);
+        toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
       } else {
         toast.success('已取得您的位置');
       }
 
       // 開始監控位置變化
       const id = watchPosition(
-        (newLocation) => {
+        async (newLocation) => {
           setUserLocation(newLocation);
 
           // 使用當前的區域配置
-          const currentAreaConfig = currentAreaConfigRef.current;
           const newWithinBounds = isWithinBounds(newLocation, currentAreaConfig);
 
           // 只在邊界狀態改變時顯示 toast
@@ -150,7 +150,7 @@ export default function Home() {
       const errorMessage = error instanceof Error ? error.message : '位置服務不可用';
       toast.error(errorMessage);
     }
-  }, []);
+  }, [currentAreaConfig]);
 
   // 自動 GPS 檢測
   useEffect(() => {
@@ -175,25 +175,7 @@ export default function Home() {
     };
 
     tryAutoLocation();
-  }, [isClient, initLocationTracking]);
-
-  // 切換區域函數
-  const switchArea = useCallback(
-    (mode: AreaMode) => {
-      const newConfig = AVAILABLE_AREAS[mode];
-      setCurrentAreaConfig(newConfig);
-      setCurrentAreaMode(mode);
-
-      toast.info(`已切換到${newConfig.displayName}`);
-
-      // 重新檢查位置邊界
-      if (userLocation) {
-        const withinBounds = isWithinBounds(userLocation, newConfig);
-        isWithinBoundsRef.current = withinBounds;
-      }
-    },
-    [userLocation]
-  );
+  }, [isClient, initLocationTracking, currentAreaConfig]);
 
   // 清理位置監控
   useEffect(() => {
@@ -227,20 +209,20 @@ export default function Home() {
         return;
       }
 
-      // 使用 ref 中的當前區域配置
-      const areaConfig = currentAreaConfigRef.current;
-      if (!isWithinBounds(userLocation, areaConfig)) {
-        toast.error(`您不在${areaConfig.displayName}範圍內，無法進行回報`);
-        return;
-      }
-
-      const reportData: ReportData = {
-        lat: userLocation.lat,
-        lon: userLocation.lon,
-        state,
-      };
-
       try {
+        // 檢查是否在當前區域範圍內
+        if (!isWithinBounds(userLocation, currentAreaConfig)) {
+          toast.error(`您不在${currentAreaConfig.displayName}範圍內，無法進行回報`);
+          return;
+        }
+
+        const reportData: ReportData = {
+          lat: userLocation.lat,
+          lon: userLocation.lon,
+          state,
+          areaConfig: currentAreaConfig,
+        };
+
         // 調用後端 API
         const response = await submitReportWithRetry(reportData, 2);
 
@@ -265,7 +247,7 @@ export default function Home() {
         }
       }
     },
-    [userLocation]
+    [userLocation, currentAreaConfig]
   );
 
   // 切換鎖定中心模式
@@ -310,6 +292,32 @@ export default function Home() {
     initLocationTracking();
   }, [initLocationTracking]);
 
+  // 處理區域切換（現在 Jotai 自動管理狀態）
+  const handleAreaChange = useCallback(() => {
+    // 檢查使用者位置是否在新區域內
+    if (userLocation) {
+      const withinBounds = isWithinBounds(userLocation, currentAreaConfig);
+      isWithinBoundsRef.current = withinBounds;
+
+      if (!withinBounds) {
+        toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
+      } else {
+        toast.success(`已切換到${currentAreaConfig.displayName}`);
+      }
+    }
+  }, [userLocation, currentAreaConfig]);
+
+  // 監聽區域配置變化，自動更新地圖和執行相關操作
+  useEffect(() => {
+    // 更新 ref 以供其他函數使用
+    currentAreaConfigRef.current = currentAreaConfig;
+
+    // 觸發區域變化處理（邊界檢查和提示）
+    handleAreaChange();
+  }, [currentAreaConfig, handleAreaChange]);
+
+  // 區域切換邏輯已完全由 Jotai 管理，不再需要向後相容函數
+
   // 渲染不同狀態的內容
   const renderContent = () => {
     // 統一的地圖和 UI 佈局
@@ -348,7 +356,7 @@ export default function Home() {
               />
             </div>
           )}
-          <div className="pointer-events-auto ml-auto">
+          <div className="pointer-events-auto ml-auto space-y-2">
             {/* 圖層控制面板 - 在所有狀態下都顯示 */}
             <LayerControlPanel layers={layerVisibility} onLayerToggle={handleLayerToggle} />
           </div>
@@ -357,13 +365,13 @@ export default function Home() {
             <div className="bg-white/100 backdrop-blur-xs border border-gray-300 rounded-xl absolute inset-0" />
             {/* Bottom Bar - 根據狀態顯示不同內容 */}
             {(appState === 'ready' || appState === 'denied' || appState === 'unavailable') && (
-              <WelcomeButtons onJoin={handleJoinClick} areaName={currentAreaConfig.displayName} />
+              <WelcomeButtons onJoin={handleJoinClick} areaName={currentAreaDisplayName} />
             )}
             {appState === 'granted' && userLocation && (
               <ReportButtons
                 userLocation={userLocation}
                 onReport={handleReport}
-                disabled={!isWithinBounds(userLocation, currentAreaConfig)}
+                disabled={isWithinBoundsRef.current === false}
               />
             )}
           </div>
@@ -440,7 +448,7 @@ export default function Home() {
         )}
 
         {/* 除錯面板 - 只在非生產環境顯示 */}
-        {showDebugPanel && <DebugPanel currentArea={currentAreaMode} onAreaChange={switchArea} />}
+        {showDebugPanel && <DebugPanel />}
       </div>
     );
   };

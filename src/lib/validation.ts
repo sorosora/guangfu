@@ -1,5 +1,28 @@
 import { z } from 'zod';
 
+// 區域配置 Schema（用於前端傳遞完整的區域資訊）
+const AreaConfigSchema = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  bounds: z.object({
+    northWest: z.object({ lat: z.number(), lon: z.number() }),
+    northEast: z.object({ lat: z.number(), lon: z.number() }),
+    southWest: z.object({ lat: z.number(), lon: z.number() }),
+    southEast: z.object({ lat: z.number(), lon: z.number() }),
+  }),
+  center: z.object({ lat: z.number(), lon: z.number() }),
+  description: z.string(),
+  physicalSize: z.object({
+    width: z.number(),
+    height: z.number(),
+  }),
+  gridSize: z.object({
+    width: z.number(),
+    height: z.number(),
+  }),
+  gridPrecision: z.number(),
+});
+
 // 回報請求資料驗證 Schema
 export const ReportRequestSchema = z.object({
   lat: z.number().min(-90, '緯度必須在 -90 到 90 之間').max(90, '緯度必須在 -90 到 90 之間'),
@@ -7,6 +30,7 @@ export const ReportRequestSchema = z.object({
   state: z.union([z.literal(0), z.literal(1)]).refine((val) => val === 0 || val === 1, {
     message: '狀態必須為 0（已清除）或 1（有淤泥）',
   }),
+  areaConfig: AreaConfigSchema.optional(),
 });
 
 // 推導型別
