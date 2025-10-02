@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="zh-TW">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
-        <Toaster position="bottom-center" mobileOffset={{ bottom: '140px' }} />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

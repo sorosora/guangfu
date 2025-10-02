@@ -157,7 +157,7 @@ export default function DebugPanel({ currentArea, onAreaChange, className }: Deb
 
   if (!isOpen) {
     return (
-      <div className={cn('fixed bottom-4 right-4 z-[2000]', className)}>
+      <div className={cn('fixed top-4 left-4 z-[2000]', className)}>
         <Button
           onClick={() => setIsOpen(true)}
           variant="outline"
@@ -175,7 +175,7 @@ export default function DebugPanel({ currentArea, onAreaChange, className }: Deb
   return (
     <div
       className={cn(
-        'fixed bottom-4 inset-x-4 z-[2000] max-h-[80vh] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden',
+        'fixed top-4 inset-x-4 z-[2000] max-h-[80vh] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden',
         className
       )}
     >

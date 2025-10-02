@@ -32,54 +32,50 @@ export default function ReportButtons({
   const isLocationAvailable = !!userLocation;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-pb z-[1010]">
-      <div className="max-w-md mx-auto space-y-3">
-        {/* 位置狀態指示 */}
-        <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-          <MapPin className="w-4 h-4" />
-          <span>{isLocationAvailable ? '已取得位置' : '正在取得位置...'}</span>
-        </div>
-
-        {/* 回報按鈕 */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* 有淤泥按鈕 */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="h-16 text-lg font-medium"
-            disabled={!isLocationAvailable || disabled || loading !== null}
-            onClick={() => handleReport(1)}
-          >
-            {loading === 1 ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <span className="mr-2">🪏</span>
-            )}
-            有淤泥
-          </Button>
-
-          {/* 無淤泥按鈕 */}
-          <Button
-            variant="default"
-            size="lg"
-            className="h-16 text-lg font-medium bg-green-600 hover:bg-green-700"
-            disabled={!isLocationAvailable || disabled || loading !== null}
-            onClick={() => handleReport(0)}
-          >
-            {loading === 0 ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <span className="mr-2">✨</span>
-            )}
-            已清除
-          </Button>
-        </div>
-
-        {/* 提示文字 */}
-        {!isLocationAvailable && (
-          <p className="text-center text-sm text-gray-500">請允許位置權限以進行回報</p>
-        )}
+    <div className="p-2 max-w-md mx-auto space-y-3 relative">
+      {/* 位置狀態指示 */}
+      <div className="flex items-center justify-center space-x-2 text-sm text-primary">
+        <MapPin className="w-4 h-4" />
+        <span>{isLocationAvailable ? '已取得位置' : '正在取得位置...'}</span>
       </div>
+
+      {/* 回報按鈕 */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* 有淤泥按鈕 */}
+        <Button
+          size="lg"
+          className="h-16 text-lg font-medium"
+          disabled={!isLocationAvailable || disabled || loading !== null}
+          onClick={() => handleReport(1)}
+        >
+          {loading === 1 ? (
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+          ) : (
+            <span className="mr-2">🪏</span>
+          )}
+          有淤泥
+        </Button>
+
+        {/* 無淤泥按鈕 */}
+        <Button
+          size="lg"
+          className="h-16 text-lg font-medium"
+          disabled={!isLocationAvailable || disabled || loading !== null}
+          onClick={() => handleReport(0)}
+        >
+          {loading === 0 ? (
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+          ) : (
+            <span className="mr-2">✨</span>
+          )}
+          已清除
+        </Button>
+      </div>
+
+      {/* 提示文字 */}
+      {!isLocationAvailable && (
+        <p className="text-center text-sm text-gray-500">請允許位置權限以進行回報</p>
+      )}
     </div>
   );
 }

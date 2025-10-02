@@ -328,45 +328,46 @@ export default function Home() {
           className="w-full h-screen"
         />
 
-        {/* 圖層控制面板 - 在所有狀態下都顯示 */}
-        <LayerControlPanel
-          layers={layerVisibility}
-          onLayerToggle={handleLayerToggle}
-          areaDisplayName={currentAreaConfig.displayName}
-        />
+        <div className="sticky bottom-0 right-0 px-2 pb-[max(8px,env(safe-area-inset-bottom))] z-[1010] flex flex-col gap-2 pointer-events-none left-full md:max-w-96">
+          {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
+          {appState !== 'requesting' && (
+            <div className="ml-auto flex flex-col gap-2 pointer-events-auto">
+              {/* 縮放按鈕 */}
+              <ZoomButtons
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                canZoomIn={canZoomIn}
+                canZoomOut={canZoomOut}
+              />
 
-        {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
-        {appState !== 'requesting' && (
-          <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2">
-            {/* 跟隨按鈕 */}
-            <CenterLockButton
-              isLocked={lockCenter}
-              onToggle={toggleLockCenter}
-              className="relative"
-            />
-
-            {/* 縮放按鈕 */}
-            <ZoomButtons
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              canZoomIn={canZoomIn}
-              canZoomOut={canZoomOut}
-            />
+              {/* 跟隨按鈕 */}
+              <CenterLockButton
+                isLocked={lockCenter}
+                onToggle={toggleLockCenter}
+                className="relative"
+              />
+            </div>
+          )}
+          <div className="pointer-events-auto ml-auto">
+            {/* 圖層控制面板 - 在所有狀態下都顯示 */}
+            <LayerControlPanel layers={layerVisibility} onLayerToggle={handleLayerToggle} />
           </div>
-        )}
 
-        {/* Bottom Bar - 根據狀態顯示不同內容 */}
-        {(appState === 'ready' || appState === 'denied' || appState === 'unavailable') && (
-          <WelcomeButtons onJoin={handleJoinClick} areaName={currentAreaConfig.displayName} />
-        )}
-
-        {appState === 'granted' && userLocation && (
-          <ReportButtons
-            userLocation={userLocation}
-            onReport={handleReport}
-            disabled={!isWithinBounds(userLocation, currentAreaConfig)}
-          />
-        )}
+          <div className="relative pointer-events-auto">
+            <div className="bg-white/100 backdrop-blur-xs border border-gray-300 rounded-xl absolute inset-0" />
+            {/* Bottom Bar - 根據狀態顯示不同內容 */}
+            {(appState === 'ready' || appState === 'denied' || appState === 'unavailable') && (
+              <WelcomeButtons onJoin={handleJoinClick} areaName={currentAreaConfig.displayName} />
+            )}
+            {appState === 'granted' && userLocation && (
+              <ReportButtons
+                userLocation={userLocation}
+                onReport={handleReport}
+                disabled={!isWithinBounds(userLocation, currentAreaConfig)}
+              />
+            )}
+          </div>
+        </div>
 
         {/* 狀態提示 */}
         {appState === 'denied' && (

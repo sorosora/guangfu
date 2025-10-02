@@ -1,20 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import {
-  MapContainer,
-  TileLayer,
-  useMap,
-  useMapEvents,
-  Marker,
-  Circle,
-  ScaleControl,
-} from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Circle } from 'react-leaflet';
 import { Location, LayerVisibility } from '@/types/map';
 import { AreaConfig } from '@/config/areas';
 import CustomTileLayer from './CustomTileLayer';
 import ManualAnnotationLayer from './ManualAnnotationLayer';
 import KMZLayer from './KMZLayer';
+import CenterScaleControl from './CenterScaleControl';
 import 'leaflet/dist/leaflet.css';
 
 // 延遲載入 Leaflet 以避免 SSR 問題
@@ -306,6 +299,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       maxZoom={19}
       zoomControl={false}
       className={className}
+      attributionControl={false}
       ref={leafletMapRef}
     >
       <TileLayer
@@ -342,8 +336,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
         <LocationMarkerInternal position={userLocation} accuracy={10} showAccuracyCircle={true} />
       )}
 
-      {/* 比例尺 */}
-      <ScaleControl position="bottomleft" />
+      {/* 中心比例尺 */}
+      <CenterScaleControl />
     </MapContainer>
   );
 });
