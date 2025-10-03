@@ -228,19 +228,21 @@ export default function CustomTileLayer({ opacity = 0.7, zIndex = 1000 }: Custom
       return;
     }
 
-    // 建立圖磚圖層 URL 模板
-    const tileUrlTemplate = `${tilesBaseUrl}/${currentVersion}/0/{x}/{y}.png?t=${Date.now()}`;
+    // 建立標準 TMS 圖磚圖層 URL 模板
+    const tileUrlTemplate = useOGCFormat
+      ? `${tilesBaseUrl}/{z}/{x}/{y}.png?t=${Date.now()}` // 標準 TMS 格式
+      : `${tilesBaseUrl}/${currentVersion}/0/{x}/{y}.png?t=${Date.now()}`; // 向後相容舊格式
 
-    // 建立 TileLayer 配置 - 針對零星圖磚優化
+    // 建立 TileLayer 配置 - 標準 TMS 優化
     const tileLayerOptions: L.TileLayerOptions = {
       opacity: opacity,
       zIndex: zIndex,
       bounds: window.L.latLngBounds(bounds),
-      minZoom: 10,
-      maxZoom: 18,
+      minZoom: 14, // 符合新的標準縮放層級
+      maxZoom: 19, // 支援最高精度 (~0.6m/pixel)
       tileSize: 256,
-      // 圖磚座標系統設定
-      tms: false,
+      // 標準 TMS 座標系統設定
+      tms: false, // 使用標準 TMS (非 OSM TMS)
       // 零星圖磚支援 - 404 錯誤不顯示替代圖磚
       errorTileUrl: '',
     };

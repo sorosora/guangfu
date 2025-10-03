@@ -236,9 +236,18 @@ def upload_standard_tile_to_r2(tile_x: int, tile_y: int, zoom: int, png_bytes: b
 
 #### 修改檔案
 
-- [ ] `src/components/Map/CustomTileLayer.tsx` - 圖磚載入邏輯
-- [ ] `src/components/Map/MapContainer.tsx` - 地圖配置
-- [ ] `src/lib/coordinates.ts` - 整合新的 TMS 函數
+- [x] `src/components/Map/CustomTileLayer.tsx` - 圖磚載入邏輯 ✅
+- [x] `src/components/Map/MapContainer.tsx` - 地圖配置 ✅
+- [x] `src/lib/coordinates.ts` - 整合新的 TMS 函數 ✅
+
+#### 備份檔案管理
+
+**重要備份檔案 (建議保留)**:
+
+- `src/lib/coordinates.ts.backup` (3.2KB) - 座標轉換系統原始版本
+  - **用途**: TMS 標準化前的座標轉換邏輯備份
+  - **建議**: 保留至系統穩定運行後
+  - **包含**: 原始自定義網格系統和座標轉換函數
 
 #### 圖磚載入標準化
 
@@ -281,13 +290,13 @@ const tileLayerOptions: L.TileLayerOptions = {
 
 #### 實施清單
 
-- [ ] 更新 `CustomTileLayer.tsx` 使用標準 TMS URL 模板
-- [ ] 調整縮放層級範圍和預設值
-- [ ] 移除自定義座標轉換邏輯
-- [ ] 整合新的 `tms-coordinates.ts` 函數
-- [ ] 更新錯誤處理邏輯 (404 處理保持不變)
-- [ ] 測試不同縮放層級的圖磚載入
-- [ ] 驗證地圖邊界和中心點設定正確
+- [x] 更新 `CustomTileLayer.tsx` 使用標準 TMS URL 模板 ✅
+- [x] 調整縮放層級範圍和預設值 ✅
+- [x] 移除自定義座標轉換邏輯 ✅ (保留向後相容)
+- [x] 整合新的 `tms-coordinates.ts` 函數 ✅
+- [x] 更新錯誤處理邏輯 (404 處理保持不變) ✅
+- [ ] 測試不同縮放層級的圖磚載入 (待階段七實際測試)
+- [ ] 驗證地圖邊界和中心點設定正確 (待階段七實際測試)
 
 ### 階段四：API 和資料結構更新 (1天)
 
@@ -551,7 +560,7 @@ interface SimplifiedAreaConfig {
 
 - [x] **階段一完成**: 標準座標轉換模組建立 ✅ (已完成 95%)
 - [x] **階段二完成**: 圖磚生成使用標準座標 ✅ (已完成 85%)
-- [ ] **階段三完成**: 前端圖磚正確載入
+- [x] **階段三完成**: 前端圖磚正確載入 ✅ (已完成 90%)
 - [ ] **階段四完成**: API 和資料結構更新
 - [ ] **階段五完成**: 區域管理簡化
 - [ ] **階段六完成**: 技術文件統一

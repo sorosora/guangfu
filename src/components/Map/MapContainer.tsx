@@ -291,12 +291,12 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   return (
     <MapContainer
       center={[mapCenter.lat, mapCenter.lon]}
-      zoom={16}
+      zoom={17} // 調整為適當的標準縮放層級
       style={{ height: '100%', width: '100%' }}
       maxBounds={bounds}
       maxBoundsViscosity={1.0}
-      minZoom={14}
-      maxZoom={19}
+      minZoom={14} // 區域概覽
+      maxZoom={19} // 最高精度 (~0.6m/pixel)
       zoomControl={false}
       className={className}
       attributionControl={false}
