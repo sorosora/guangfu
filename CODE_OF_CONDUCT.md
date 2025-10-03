@@ -46,9 +46,9 @@ This Code of Conduct applies both within project spaces and in public spaces whe
 
 ## 強制執行 | Enforcement
 
-如發現辱罵、騷擾或其他不當行為，可透過 [INSERT EMAIL ADDRESS] 聯絡專案團隊。所有申訴都將被審查和調查，並將根據情況做出必要且適當的回應。專案團隊有義務對事件回報者的身份保密。具體執行政策的細節可能會另行公布。
+如發現辱罵、騷擾或其他不當行為，可透過 jackson90295@gmail.com 聯絡專案團隊。所有申訴都將被審查和調查，並將根據情況做出必要且適當的回應。專案團隊有義務對事件回報者的身份保密。具體執行政策的細節可能會另行公布。
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at [INSERT EMAIL ADDRESS]. All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident. Further details of specific enforcement policies may be posted separately.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at jackson90295@gmail.com. All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident. Further details of specific enforcement policies may be posted separately.
 
 不善意遵守或執行本行為準則的專案維護者，可能會面臨由其他專案領導成員決定的暫時或永久的後果。
 
@@ -83,13 +83,13 @@ As this project serves a multilingual community:
 
 ### 如何回報 | How to Report
 
-1. **直接聯絡 | Direct Contact**: 發送郵件至 [INSERT EMAIL ADDRESS]
-2. **匿名回報 | Anonymous Report**: 透過 [INSERT ANONYMOUS FORM LINK]
+1. **直接聯絡 | Direct Contact**: 發送郵件至 jackson90295@gmail.com
+2. **匿名回報 | Anonymous Report**: 透過 https://forms.gle/jJnvmbHxL4kLcFT28
 3. **緊急情況 | Emergency**: 如涉及人身安全，請立即聯絡當地執法部門
 
 ### 回報後會發生什麼 | What Happens After Reporting
 
-1. **確認收到 | Acknowledgment**: 我們將在 24 小時內確認收到您的回報
+1. **確認收到 | Acknowledgment**: 我們將確認收到您的回報
 2. **調查 | Investigation**: 我們將進行公正、保密的調查
 3. **行動 | Action**: 根據調查結果採取適當行動
 4. **後續追蹤 | Follow-up**: 我們將向回報者更新處理狀況

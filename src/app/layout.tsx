@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '花蓮光復清淤地圖',
+  title: '清淤地圖 - 光復計畫',
   description: '花蓮縣光復鄉颱風後清淤工作即時互動地圖平台',
 };
 

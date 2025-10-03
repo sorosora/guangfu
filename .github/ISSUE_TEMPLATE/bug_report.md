@@ -107,5 +107,5 @@ assignees: ''
 
 ---
 
-**感謝您協助改進花蓮光復清淤地圖！**  
-**Thank you for helping improve the Hualien Guangfu Cleanup Progress Map!**
+**感謝您協助改進清淤地圖 - 光復計畫！**  
+**Thank you for helping improve the Cleanup Map - Guangfu Project!**

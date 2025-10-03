@@ -1,14 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 🚨 安全漏洞回報 | Security Vulnerability Report
-    url: mailto:security@project-domain.com
-    about: 請透過私人管道回報安全性問題 | Please report security issues through private channels
-  - name: 💬 社群討論 | Community Discussion
-    url: https://github.com/your-username/guangfu-cleanup-map/discussions
-    about: 一般討論、想法分享和問答 | General discussions, idea sharing, and Q&A
+  - name: 🔒 私密回報 | Private Report
+    url: https://forms.gle/jJnvmbHxL4kLcFT28
+    about: 回報安全性漏洞、違反行為準則事件，或其他敏感問題。
   - name: 📖 專案文件 | Project Documentation
-    url: https://github.com/your-username/guangfu-cleanup-map/blob/main/CLAUDE.md
+    url: https://github.com/sorosora/guangfu/blob/main/docs/tech-spec.md
     about: 查看完整的專案指引和技術文件 | View complete project guide and technical documentation
-  - name: 🆘 緊急救援支援 | Emergency Rescue Support
-    url: mailto:emergency@project-domain.com
-    about: 災難現場的緊急技術支援 | Emergency technical support for disaster sites

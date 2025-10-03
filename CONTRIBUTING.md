@@ -1,8 +1,8 @@
 # 貢獻指引 | Contributing Guide
 
-感謝您對花蓮光復清淤地圖專案的關注！我們歡迎所有形式的貢獻，包括但不限於程式碼、文件、測試、錯誤回報和功能建議。
+感謝您對「清淤地圖 - 光復計畫」的關注！我們歡迎所有形式的貢獻，包括但不限於程式碼、文件、測試、錯誤回報和功能建議。
 
-Thank you for your interest in the Hualien Guangfu Cleanup Progress Map project! We welcome all forms of contributions, including but not limited to code, documentation, testing, bug reports, and feature suggestions.
+Thank you for your interest in the Cleanup Map - Guangfu Project! We welcome all forms of contributions, including but not limited to code, documentation, testing, bug reports, and feature suggestions.
 
 ## 📋 目錄 | Table of Contents
 
@@ -84,8 +84,8 @@ We welcome suggestions for new features! Please create an issue explaining:
 1. **複製專案 | Clone the repository**:
 
    ```bash
-   git clone https://github.com/your-username/guangfu-cleanup-map.git
-   cd guangfu-cleanup-map
+   git clone https://github.com/sorosora/guangfu.git
+   cd guangfu
    ```
 
 2. **安裝依賴 | Install dependencies**:
@@ -285,7 +285,6 @@ Documentation changes are equally important! Please follow the same submission p
 If you have any questions, you can seek help through:
 
 - **GitHub Issues**: 提出技術問題 | Ask technical questions
-- **GitHub Discussions**: 參與社群討論 | Join community discussions
 - **Email**: 聯絡維護者 | Contact maintainers
 
 ## 🙏 致謝 | Acknowledgments

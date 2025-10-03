@@ -1,4 +1,4 @@
--- 花蓮光復清淤地圖 - Supabase 資料庫設定
+-- 清淤地圖 - 光復計畫 - Supabase 資料庫設定
 -- 在 Supabase SQL Editor 中執行以下 SQL 語句
 
 -- 0. 啟用 PostGIS 擴展（地理空間功能）

@@ -1,4 +1,4 @@
-# 花蓮光復清淤地圖 | Hualien Guangfu Cleanup Progress Map
+# 清淤地圖 - 光復計畫 | Cleanup Map - Guangfu Project
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)
@@ -74,8 +74,8 @@ Python 3.9+ (用於背景任務 | for background tasks)
 
 ```bash
 # 複製專案 | Clone the repository
-git clone https://github.com/your-username/guangfu-cleanup-map.git
-cd guangfu-cleanup-map
+git clone https://github.com/sorosora/guangfu.git
+cd guangfu
 
 # 安裝依賴 | Install dependencies
 yarn
@@ -216,7 +216,7 @@ We welcome contributions of all kinds! Please see [CONTRIBUTING.md](CONTRIBUTING
 
 1. Fork 此專案 | Fork the repository
 2. 建立功能分支 | Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. 提交變更 | Commit your changes (`git commit -m 'feat: add amazing feature'`)
+3. 提交變更 | Commit your changes (`git commit -m '''feat: add amazing feature'''`)
 4. 推送到分支 | Push to the branch (`git push origin feature/amazing-feature`)
 5. 開啟 Pull Request | Open a Pull Request
 
@@ -234,13 +234,13 @@ If you discover a security vulnerability, please see our [Security Policy](SECUR
 
 ## 📞 聯絡資訊 | Contact
 
-- **專案維護者 | Project Maintainer**: [Your Name]
-- **電子郵件 | Email**: your.email@example.com
-- **專案連結 | Project Link**: [https://github.com/your-username/guangfu-cleanup-map](https://github.com/your-username/guangfu-cleanup-map)
+- **專案維護者 | Project Maintainer**: Jackson Wang
+- **電子郵件 | Email**: jackson90295@gmail.com
+- **表單聯絡 | Form Contact**: https://forms.gle/jJnvmbHxL4kLcFT28
+- **專案連結 | Project Link**: [https://github.com/sorosora/guangfu](https://github.com/sorosora/guangfu)
 
 ## 🙏 致謝 | Acknowledgments
 
-- 花蓮縣光復鄉公所 | Guangfu Township Office, Hualien County
 - 所有參與清淤工作的志工與民眾 | All volunteers and residents participating in cleanup efforts
 - 開源社群的技術支援 | Technical support from the open source community
 
@@ -249,3 +249,15 @@ If you discover a security vulnerability, please see our [Security Policy](SECUR
 **讓我們一起為光復鄉的災後重建貢獻力量！**
 
 **Let's work together to contribute to the post-disaster reconstruction of Guangfu Township!**
+
+---
+
+本軟體依據 MIT 授權條款釋出，允許自由使用、修改、散布，
+但需保留此授權聲明。本專案旨在協助花蓮縣光復鄉災後重建工作，
+歡迎任何有助於社會公益的使用與改進。
+
+This software is released under the MIT License, allowing free use,
+modification, and distribution, but this license notice must be retained.
+This project aims to assist in post-disaster reconstruction efforts in
+Guangfu Township, Hualien County, and welcomes any use and improvement
+that contributes to social welfare.

@@ -131,5 +131,5 @@ assignees: ''
 
 ---
 
-**感謝您的建議！讓我們一起讓花蓮光復清淤地圖變得更好！**  
-**Thank you for your suggestion! Let's make the Hualien Guangfu Cleanup Progress Map better together!**
+**感謝您的建議！讓我們一起讓清淤地圖 - 光復計畫變得更好！**  
+**Thank you for your suggestion! Let's make the Cleanup Map - Guangfu Project better together!**
