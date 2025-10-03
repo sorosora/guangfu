@@ -14,9 +14,11 @@ on:
         type: boolean
 
 jobs:
-  generate-tiles:
+  generate-tiles-preview:
+    if: github.ref == 'refs/heads/preview'
     runs-on: ubuntu-latest
     timeout-minutes: 5 # 極簡架構 <2 秒，設定 5 分鐘超時保護
+    environment: preview
 
     steps:
       - name: Checkout repository
@@ -44,13 +46,13 @@ jobs:
 
       - name: Validate environment
         run: |
-          echo "🔍 驗證執行環境..."
+          echo "🔍 驗證執行環境 (Preview)..."
           python --version
           python -c "import PIL, numpy, requests, boto3, certifi; print(f'✅ 所有依賴正常'); print(f'📦 certifi: {certifi.__version__}'); print(f'📦 boto3: {boto3.__version__}')"
           echo "⏰ 執行時間: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "ℹ️ 環境變數配置將由 Python 腳本驗證"
 
-      - name: Execute minimal tile generation
+      - name: Execute minimal tile generation (Preview)
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
@@ -61,7 +63,7 @@ jobs:
           # 多區域圖磚生成配置
           TILE_GENERATION_AREAS: ${{ vars.TILE_GENERATION_AREAS || 'guangfu' }}
         run: |
-          echo "🚀 啟動多區域圖磚生成器 v3.1"
+          echo "🚀 啟動多區域圖磚生成器 v3.1 (Preview Environment)"
           echo "🌍 啟用區域: ${TILE_GENERATION_AREAS:-guangfu}"
           start_time=$(date +%s)
 
@@ -76,7 +78,7 @@ jobs:
       - name: Performance monitoring
         if: always()
         run: |
-          echo "📊 === 執行統計 ==="
+          echo "📊 === 執行統計 (Preview) ==="
           echo "日期: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "執行器: ${{ runner.os }}"
           echo "Python 版本: $(python --version)"
@@ -92,7 +94,7 @@ jobs:
       - name: Budget tracking
         if: always()
         run: |
-          echo "💰 === 預算追蹤 ==="
+          echo "💰 === 預算追蹤 (Preview) ==="
           echo "目標: 每月 <2000 分鐘"
           echo "頻率: 每 5 分鐘執行"
           echo "每月執行次數: 8640 次"
@@ -103,7 +105,7 @@ jobs:
       - name: Error handling and notification
         if: failure()
         run: |
-          echo "❌ === 執行失敗 ==="
+          echo "❌ === 執行失敗 (Preview) ==="
           echo "時間: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "請檢查:"
           echo "1. Redis 連線狀態 (UPSTASH_REDIS_REST_URL)"
@@ -131,7 +133,131 @@ jobs:
       - name: Success summary
         if: success()
         run: |
-          echo "✅ === 執行成功 ==="
+          echo "✅ === 執行成功 (Preview) ==="
+          echo "極簡架構正常運作"
+          echo "圖磚已更新到最新狀態"
+          echo "下次執行: 5 分鐘後"
+
+  generate-tiles-production:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5 # 極簡架構 <2 秒，設定 5 分鐘超時保護
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: tiles-deps-${{ runner.os }}-py3.11-${{ hashFiles('scripts/**/*.py') }}
+          restore-keys: |
+            tiles-deps-${{ runner.os }}-py3.11-
+
+      - name: Install optimized dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # 極簡依賴列表 - 專為生產環境優化
+          # 注意：certifi 版本鎖定避免 SSL 問題
+          pip install --no-cache-dir pillow>=10.0.0 numpy>=1.24.0 requests>=2.31.0 boto3>=1.29.0 urllib3>=2.0.0 certifi==2024.8.30 redis
+
+      - name: Validate environment
+        run: |
+          echo "🔍 驗證執行環境 (Production)..."
+          python --version
+          python -c "import PIL, numpy, requests, boto3, certifi; print(f'✅ 所有依賴正常'); print(f'📦 certifi: {certifi.__version__}'); print(f'📦 boto3: {boto3.__version__}')"
+          echo "⏰ 執行時間: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "ℹ️ 環境變數配置將由 Python 腳本驗證"
+
+      - name: Execute minimal tile generation (Production)
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_BUCKET_NAME: ${{ secrets.CLOUDFLARE_R2_BUCKET_NAME }}
+          CLOUDFLARE_R2_ENDPOINTS: ${{ secrets.CLOUDFLARE_R2_ENDPOINTS }}
+          # 多區域圖磚生成配置
+          TILE_GENERATION_AREAS: ${{ vars.TILE_GENERATION_AREAS || 'guangfu' }}
+        run: |
+          echo "🚀 啟動多區域圖磚生成器 v3.1 (Production Environment)"
+          echo "🌍 啟用區域: ${TILE_GENERATION_AREAS:-guangfu}"
+          start_time=$(date +%s)
+
+          # 執行多區域圖磚生成
+          python scripts/generate_tiles.py
+
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          echo "⏱️ 總執行時間: ${duration} 秒"
+          echo "💰 本次消耗: $(echo "scale=2; $duration/60" | bc) 分鐘"
+
+      - name: Performance monitoring
+        if: always()
+        run: |
+          echo "📊 === 執行統計 (Production) ==="
+          echo "日期: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "執行器: ${{ runner.os }}"
+          echo "Python 版本: $(python --version)"
+
+          # 檢查系統資源使用
+          if command -v free >/dev/null 2>&1; then
+            echo "記憶體使用: $(free -h | grep '^Mem:' | awk '{print $3"/"$2}')"
+          fi
+
+          # 檢查磁碟使用
+          echo "磁碟使用: $(df -h / | tail -1 | awk '{print $3"/"$2" ("$5")"}')"
+
+      - name: Budget tracking
+        if: always()
+        run: |
+          echo "💰 === 預算追蹤 (Production) ==="
+          echo "目標: 每月 <2000 分鐘"
+          echo "頻率: 每 5 分鐘執行"
+          echo "每月執行次數: 8640 次"
+          echo "預期每次執行: <2 秒"
+          echo "預期每月總時間: <288 分鐘"
+          echo "實際執行請查看上方 '總執行時間'"
+
+      - name: Error handling and notification
+        if: failure()
+        run: |
+          echo "❌ === 執行失敗 (Production) ==="
+          echo "時間: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "請檢查:"
+          echo "1. Redis 連線狀態 (UPSTASH_REDIS_REST_URL)"
+          echo "2. R2 憑證配置 (CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY)"
+          echo "3. R2 端點配置 (CLOUDFLARE_R2_ENDPOINTS)"
+          echo "4. 網格變更是否存在 (changed_grids)"
+          echo "5. SSL/TLS 憑證問題 (certifi 版本)"
+          echo "6. 系統資源是否充足"
+
+          # 基本連線測試
+          echo ""
+          echo "🔍 === 基本診斷 ==="
+          if [ ! -z "$CLOUDFLARE_R2_ENDPOINTS" ]; then
+            echo "測試 R2 端點連線..."
+            curl -I "$CLOUDFLARE_R2_ENDPOINTS" || echo "R2 端點無法訪問"
+          fi
+
+          if [ ! -z "$UPSTASH_REDIS_REST_URL" ]; then
+            echo "測試 Redis 端點連線..."
+            curl -I "$UPSTASH_REDIS_REST_URL" || echo "Redis 端點無法訪問"
+          fi
+
+          exit 1
+
+      - name: Success summary
+        if: success()
+        run: |
+          echo "✅ === 執行成功 (Production) ==="
           echo "極簡架構正常運作"
           echo "圖磚已更新到最新狀態"
           echo "下次執行: 5 分鐘後"
