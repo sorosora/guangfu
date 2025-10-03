@@ -6,30 +6,53 @@ OGC TMS (Tile Matrix Set) 標準相容的 metadata 生成器
 
 import json
 import time
+import os
+import sys
 from typing import Dict, List, Optional
 from datetime import datetime
 
-# 光復鄉地理邊界
-GUANGFU_BOUNDS = {
+# 引入環境變數管理模組
+# 確保能在 GitHub Actions 和本地環境中正確導入
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+from utils.env_config import EnvironmentConfig
+
+# 預設光復鄉地理邊界（作為備用）
+DEFAULT_GUANGFU_BOUNDS = {
     'north_west': {'lat': 23.68137, 'lon': 121.41771},
     'north_east': {'lat': 23.68108, 'lon': 121.45639},
     'south_west': {'lat': 23.65397, 'lon': 121.41760},
     'south_east': {'lat': 23.65396, 'lon': 121.45657},
 }
 
-# 計算邊界
-MIN_LON = min(GUANGFU_BOUNDS['north_west']['lon'], GUANGFU_BOUNDS['south_west']['lon'])
-MAX_LON = max(GUANGFU_BOUNDS['north_east']['lon'], GUANGFU_BOUNDS['south_east']['lon'])
-MIN_LAT = min(GUANGFU_BOUNDS['south_west']['lat'], GUANGFU_BOUNDS['south_east']['lat'])
-MAX_LAT = max(GUANGFU_BOUNDS['north_west']['lat'], GUANGFU_BOUNDS['north_east']['lat'])
-
 class TMSMetadataGenerator:
     """TMS 標準 metadata 生成器"""
     
-    def __init__(self):
+    def __init__(self, area_bounds=None, env_config=None):
         self.tile_size = 256
         self.grid_width = 800
         self.grid_height = 600
+        
+        # 設定區域邊界
+        if area_bounds:
+            self.bounds = area_bounds
+        else:
+            # 使用預設光復鄉邊界
+            self.bounds = DEFAULT_GUANGFU_BOUNDS
+        
+        # 計算邊界
+        self._calculate_bounds()
+        
+        # 環境配置
+        self.env_config = env_config
+        
+    def _calculate_bounds(self):
+        """計算最小和最大經緯度"""
+        self.min_lon = min(self.bounds['north_west']['lon'], self.bounds['south_west']['lon'])
+        self.max_lon = max(self.bounds['north_east']['lon'], self.bounds['south_east']['lon'])
+        self.min_lat = min(self.bounds['south_west']['lat'], self.bounds['south_east']['lat'])
+        self.max_lat = max(self.bounds['north_west']['lat'], self.bounds['north_east']['lat'])
         
     def generate_tilesetmetadata(self) -> Dict:
         """生成符合 OGC 標準的圖磚集 metadata"""
@@ -44,10 +67,10 @@ class TMSMetadataGenerator:
                 "即時地圖", "群眾外包", "開放資料", "Taiwan", "Hualien", "Cleanup"
             ],
             "attribution": "資料來源：民眾即時回報系統 | Data Source: Citizen Reporting System",
-            "bounds": [MIN_LON, MIN_LAT, MAX_LON, MAX_LAT],
+            "bounds": [self.min_lon, self.min_lat, self.max_lon, self.max_lat],
             "center": [
-                (MIN_LON + MAX_LON) / 2,
-                (MIN_LAT + MAX_LAT) / 2
+                (self.min_lon + self.max_lon) / 2,
+                (self.min_lat + self.max_lat) / 2
             ],
             "minzoom": 0,
             "maxzoom": 0,
@@ -89,15 +112,15 @@ class TMSMetadataGenerator:
             "boundingBox": {
                 "type": "BoundingBoxType",
                 "crs": "urn:ogc:def:crs:OGC:1.3:CRS84",
-                "lowerCorner": [MIN_LON, MIN_LAT],
-                "upperCorner": [MAX_LON, MAX_LAT]
+                "lowerCorner": [self.min_lon, self.min_lat],
+                "upperCorner": [self.max_lon, self.max_lat]
             },
             "tileMatrix": [
                 {
                     "type": "TileMatrixType",
                     "identifier": "0",
                     "scaleDenominator": 1.0,
-                    "topLeftCorner": [MIN_LON, MAX_LAT],
+                    "topLeftCorner": [self.min_lon, self.max_lat],
                     "tileWidth": self.tile_size,
                     "tileHeight": self.tile_size,
                     "matrixWidth": (self.grid_width + self.tile_size - 1) // self.tile_size,
@@ -140,7 +163,7 @@ class TMSMetadataGenerator:
             "description": f"版本 {version} 的清淤狀態快照",
             "created": version_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "bounds": [MIN_LON, MIN_LAT, MAX_LON, MAX_LAT],
+            "bounds": [self.min_lon, self.min_lat, self.max_lon, self.max_lat],
             "minzoom": 0,
             "maxzoom": 0,
             "attribution": "資料來源：民眾即時回報系統",
@@ -196,7 +219,7 @@ class TMSMetadataGenerator:
         if not existing_tiles:
             return {
                 "zoom_level": zoom_level,
-                "bounds": [MIN_LON, MIN_LAT, MAX_LON, MAX_LAT],
+                "bounds": [self.min_lon, self.min_lat, self.max_lon, self.max_lat],
                 "tile_count": 0,
                 "tiles": [],
                 "coverage_percentage": 0.0
@@ -214,7 +237,7 @@ class TMSMetadataGenerator:
         
         return {
             "zoom_level": zoom_level,
-            "bounds": [MIN_LON, MIN_LAT, MAX_LON, MAX_LAT],
+            "bounds": [self.min_lon, self.min_lat, self.max_lon, self.max_lat],
             "actual_coverage": {
                 "min_tile_x": min_x,
                 "max_tile_x": max_x,

@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: tiles-deps-${{ runner.os }}-py3.11-${{ hashFiles('scripts/generate_tiles.py') }}
+          key: tiles-deps-${{ runner.os }}-py3.11-${{ hashFiles('scripts/**/*.py') }}
           restore-keys: |
             tiles-deps-${{ runner.os }}-py3.11-
 
@@ -48,14 +48,7 @@ jobs:
           python --version
           python -c "import PIL, numpy, requests, boto3, certifi; print(f'✅ 所有依賴正常'); print(f'📦 certifi: {certifi.__version__}'); print(f'📦 boto3: {boto3.__version__}')"
           echo "⏰ 執行時間: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-
-          # 驗證關鍵環境變數
-          echo "🔧 驗證環境變數..."
-          if [ -z "$CLOUDFLARE_R2_ENDPOINTS" ]; then
-            echo "⚠️ 警告: CLOUDFLARE_R2_ENDPOINTS 未設定"
-          else
-            echo "✅ R2 端點: $CLOUDFLARE_R2_ENDPOINTS"
-          fi
+          echo "ℹ️ 環境變數配置將由 Python 腳本驗證"
 
       - name: Execute minimal tile generation
         env:

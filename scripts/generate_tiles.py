@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OGC TMS 相容的智能增量圖磚生成系統 v3.0
+OGC TMS 相容的智慧增量圖磚生成系統 v3.0
 採用零星圖磚策略和 R2 內部複製優化
 符合開放地理空間聯盟 (OGC) 標準
 專為 GitHub Actions 2000分鐘預算設計
@@ -18,25 +18,15 @@ from io import BytesIO
 from datetime import datetime
 
 # 引入 TMS metadata 生成器
+# 引入環境變數管理模組
+import sys
+# 確保能在 GitHub Actions 和本地環境中正確導入
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+
 from tms_metadata import TMSMetadataGenerator
-
-# 載入環境變數（生產環境不需要 .env.local）
-def load_env_file():
-    """載入 .env.local 檔案（僅本地開發用）"""
-    env_file = Path(__file__).parent.parent / '.env.local'
-    if env_file.exists():
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    value = value.strip('"\'')
-                    os.environ[key] = value
-        print(f"已載入環境變數檔案: {env_file}")
-
-# 只在本地開發時載入 .env.local
-if os.path.exists(Path(__file__).parent.parent / '.env.local'):
-    load_env_file()
+from utils.env_config import get_full_config
 
 try:
     import numpy as np
@@ -87,28 +77,24 @@ AREA_CONFIGS = {
 }
 
 
-def get_redis_connection():
+def get_redis_connection(env_config):
     """建立 Redis 連接"""
     try:
-        redis_url = os.getenv('UPSTASH_REDIS_REST_URL')
-        redis_token = os.getenv('UPSTASH_REDIS_REST_TOKEN')
-
-        if not redis_url or not redis_token:
+        redis_config = env_config.get_redis_config()
+        
+        if not redis_config['url'] or not redis_config['token']:
             print("⚠️ Redis 環境變數未設定，無法載入測試區域")
             return None
 
         # 使用 REST API 方式連接 Upstash Redis
-        return {
-            'url': redis_url,
-            'token': redis_token
-        }
+        return redis_config
     except Exception as e:
         print(f"⚠️ Redis 連接失敗: {e}")
         return None
 
-def fetch_test_areas_from_redis():
+def fetch_test_areas_from_redis(env_config):
     """從 Redis 獲取所有測試區域"""
-    redis_config = get_redis_connection()
+    redis_config = get_redis_connection(env_config)
     if not redis_config:
         return {}
 
@@ -186,17 +172,16 @@ def fetch_test_areas_from_redis():
         print(f"⚠️ 從 Redis 獲取測試區域失敗: {e}")
         return {}
 
-def get_enabled_areas():
+def get_enabled_areas(env_config):
     """獲取啟用的區域列表"""
-    areas_env = os.getenv('TILE_GENERATION_AREAS', 'guangfu')
-    enabled_areas = [area.strip() for area in areas_env.split(',')]
-
+    enabled_areas = env_config.get_tile_generation_areas()
+    
     print(f"🌍 環境變數指定的區域: {enabled_areas}")
 
     # 如果包含測試區域關鍵字，從 Redis 載入所有測試區域
     if any(area in ['test', 'all_test_areas'] or area.startswith('test_') for area in enabled_areas):
         print("🔍 偵測到測試區域需求，正在從 Redis 載入...")
-        test_areas = fetch_test_areas_from_redis()
+        test_areas = fetch_test_areas_from_redis(env_config)
 
         # 移除佔位符
         enabled_areas = [area for area in enabled_areas if area not in ['test', 'all_test_areas']]
@@ -227,11 +212,12 @@ def get_enabled_areas():
     return valid_areas
 
 class IntelligentTileGenerator:
-    def __init__(self, skip_r2=False):
-        """初始化 OGC TMS 相容的智能圖磚生成器"""
+    def __init__(self, env_config, skip_r2=False):
+        """初始化 OGC TMS 相容的智慧圖磚生成器"""
+        self.env_config = env_config
         self._setup_redis()
         self.r2_enabled = True
-        self.tms_generator = TMSMetadataGenerator()
+        self.tms_generator = TMSMetadataGenerator(env_config=self.env_config)
 
         if not skip_r2:
             try:
@@ -255,8 +241,9 @@ class IntelligentTileGenerator:
 
     def _setup_redis(self):
         """設定 Redis 連線"""
-        self.redis_url = os.getenv('UPSTASH_REDIS_REST_URL')
-        self.redis_token = os.getenv('UPSTASH_REDIS_REST_TOKEN')
+        redis_config = self.env_config.get_redis_config()
+        self.redis_url = redis_config['url']
+        self.redis_token = redis_config['token']
 
         if not self.redis_url or not self.redis_token:
             raise ValueError("缺少 Redis 環境變數: UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN")
@@ -269,9 +256,10 @@ class IntelligentTileGenerator:
 
     def _setup_r2(self):
         """設定 Cloudflare R2 連線 - 多重策略修復版"""
-        access_key = os.getenv('CLOUDFLARE_R2_ACCESS_KEY_ID')
-        secret_key = os.getenv('CLOUDFLARE_R2_SECRET_ACCESS_KEY')
-        self.bucket_name = os.getenv('CLOUDFLARE_R2_BUCKET_NAME')
+        r2_config = self.env_config.get_r2_config()
+        access_key = r2_config['access_key_id']
+        secret_key = r2_config['secret_access_key']
+        self.bucket_name = r2_config['bucket_name']
 
         if not access_key or not secret_key or not self.bucket_name:
             raise ValueError("缺少 R2 環境變數: CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_BUCKET_NAME")
@@ -279,7 +267,7 @@ class IntelligentTileGenerator:
         account_id = "d066b2cc1ddbd5e0b3c6e7772a35a93a"
 
         # 檢查環境變數中的替代端點
-        env_endpoint = os.getenv('CLOUDFLARE_R2_ENDPOINTS')
+        env_endpoint = r2_config['endpoints']
         print(f"🔍 環境變數端點: {env_endpoint}")
 
         # 多重端點和配置策略
@@ -634,7 +622,7 @@ class IntelligentTileGenerator:
 
     def generate_incremental_tile(self, tile_x: int, tile_y: int, changed_states: Dict[str, int],
                                  existing_tile_bytes: Optional[bytes] = None) -> bytes:
-        """智能增量圖磚生成 - 合併現有狀態和變更"""
+        """智慧增量圖磚生成 - 合併現有狀態和變更"""
         start_x = tile_x * TILE_SIZE
         start_y = tile_y * TILE_SIZE
 
@@ -843,7 +831,7 @@ class IntelligentTileGenerator:
             print(f"❌ 清除變更標記失敗 ({area_name}): {e}")
 
     def generate_intelligent_tiles_for_area(self, area_config: dict):
-        """為單一區域執行智能增量圖磚生成"""
+        """為單一區域執行智慧增量圖磚生成"""
         area_name = area_config['name']
         print(f"\n🚀 === 處理區域: {area_config['displayName']} ({area_name}) ===")
 
@@ -897,7 +885,7 @@ class IntelligentTileGenerator:
                 if previous_version:
                     existing_tile_bytes = self.download_existing_tile(tile_x, tile_y, previous_version)
 
-                # 智能增量生成
+                # 智慧增量生成
                 png_bytes = self.generate_incremental_tile(tile_x, tile_y, changed_states, existing_tile_bytes)
 
                 # 上傳到新版本
@@ -937,12 +925,12 @@ class IntelligentTileGenerator:
         }
 
     def generate_intelligent_tiles(self):
-        """執行 OGC TMS 相容的智能增量圖磚生成（多區域支援）"""
-        print("🚀 === OGC TMS 智能增量圖磚生成 v3.1 (多區域支援) ===")
+        """執行 OGC TMS 相容的智慧增量圖磚生成（多區域支援）"""
+        print("🚀 === OGC TMS 智慧增量圖磚生成 v3.1 (多區域支援) ===")
         print(f"⏰ 開始時間: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
         # 獲取啟用的區域列表
-        enabled_areas = get_enabled_areas()
+        enabled_areas = get_enabled_areas(self.env_config)
         print(f"📍 將處理 {len(enabled_areas)} 個區域")
 
         overall_start_time = time.time()
@@ -986,11 +974,15 @@ class IntelligentTileGenerator:
 def main():
     """主程式"""
     try:
-        generator = IntelligentTileGenerator()
+        # 初始化環境配置
+        env_config = get_full_config()
+        
+        # 建立圖磚生成器
+        generator = IntelligentTileGenerator(env_config)
         generator.generate_intelligent_tiles()
 
     except Exception as e:
-        print(f"❌ 智能圖磚生成失敗: {e}")
+        print(f"❌ 智慧圖磚生成失敗: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
