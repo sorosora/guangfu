@@ -18,7 +18,7 @@ from io import BytesIO
 from datetime import datetime
 
 # 引入 TMS metadata 生成器
-# 引入環境變數管理模組和座標轉換工具
+# 引入環境變數管理模組
 import sys
 # 確保能在 GitHub Actions 和本地環境中正確導入
 scripts_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,11 +27,6 @@ if scripts_dir not in sys.path:
 
 from tms_metadata import TMSMetadataGenerator
 from utils.env_config import get_full_config
-from utils.coordinate_utils import (
-    lat_lon_to_tile_coords, calculate_affected_tiles_from_coords,
-    coords_to_key, key_to_coords, is_within_simple_bounds,
-    get_geo_radius_coords, format_coords_4decimal, TMSConfig
-)
 
 try:
     import numpy as np
@@ -47,13 +42,10 @@ except ImportError as e:
     print("請執行：pip install pillow numpy requests boto3 urllib3 redis")
     sys.exit(1)
 
-# 配置 - 使用標準 TMS 配置
-TILE_SIZE = TMSConfig.TILE_SIZE  # 256
-PRIMARY_ZOOM = TMSConfig.PRIMARY_ZOOM  # 19
-
-# 舊版網格配置 (保留向後相容，逐步移除)
-GRID_WIDTH = 800  # 將移除
-GRID_HEIGHT = 600  # 將移除
+# 配置
+TILE_SIZE = 256
+GRID_WIDTH = 800
+GRID_HEIGHT = 600
 
 # 狀態定義
 STATE_CLEAR = 0        # 已清除
@@ -447,63 +439,19 @@ class IntelligentTileGenerator:
             print(f"❌ Redis 請求失敗: {e}")
             return None
 
-    def get_changed_coords(self, area_name: str) -> List[str]:
-        """獲取變更座標 - 基於 4 decimal lat/lng 座標"""
+    def get_changed_grids(self, area_name: str) -> List[str]:
+        """獲取變更網格 - 極簡策略的核心"""
         try:
-            result = self._redis_request('SMEMBERS', f'changed_coords:{area_name}')
+            result = self._redis_request('SMEMBERS', f'changed_grids:{area_name}')
             if result and 'result' in result:
                 return result['result'] if result['result'] else []
             return []
         except Exception as e:
-            print(f"❌ 讀取變更座標失敗 ({area_name}): {e}")
+            print(f"❌ 讀取變更網格失敗 ({area_name}): {e}")
             return []
-    
-    def get_changed_grids(self, area_name: str) -> List[str]:
-        """獲取變更網格 - 向後相容版本，將逐步移除"""
-        print("⚠️ 警告：使用舊版網格格式，建議遷移到新的座標格式")
-        return self.get_changed_coords(area_name)
 
-    def read_changed_coords_states(self, area_name: str, changed_coord_keys: List[str]) -> Dict[str, int]:
-        """讀取變更座標的狀態 - 基於 4 decimal lat/lng 座標"""
-        if not changed_coord_keys:
-            return {}
-
-        print(f"🔍 讀取 {len(changed_coord_keys)} 個變更座標狀態 ({area_name})")
-        coord_states = {}
-
-        for coord_key in changed_coord_keys:
-            try:
-                # 從 Redis 讀取座標狀態，使用 geo: 前綴
-                states_result = self._redis_request('HMGET', f'geo:{area_name}:{coord_key}', 'Score_0', 'Score_1')
-                
-                if states_result and 'result' in states_result:
-                    scores = states_result['result']
-                    if scores and len(scores) >= 2:
-                        score_0 = float(scores[0]) if scores[0] else 0.0
-                        score_1 = float(scores[1]) if scores[1] else 0.0
-                        
-                        # 根據信任演算法判斷狀態
-                        if score_1 > score_0:
-                            coord_states[coord_key] = STATE_MUDDY
-                        else:
-                            coord_states[coord_key] = STATE_CLEAR
-                    else:
-                        coord_states[coord_key] = STATE_CLEAR  # 預設為已清除
-                else:
-                    coord_states[coord_key] = STATE_CLEAR
-                    
-            except Exception as e:
-                print(f"❌ 讀取座標狀態失敗 {coord_key}: {e}")
-                coord_states[coord_key] = STATE_CLEAR
-
-        return coord_states
-    
     def read_changed_grids_states(self, area_name: str, changed_grid_ids: List[str]) -> Dict[str, int]:
-        """讀取變更網格狀態 - 向後相容版本，將逐步移除"""
-        print("⚠️ 警告：使用舊版網格狀態讀取，建議遷移到新的座標格式")
-        return self.read_changed_coords_states(area_name, changed_grid_ids)
-        
-        # 原始程式碼保留供參考
+        """只讀取變更網格的狀態 - 極簡策略的關鍵"""
         if not changed_grid_ids:
             return {}
 
@@ -659,107 +607,14 @@ class IntelligentTileGenerator:
             print(f"    ⚠️ 解析現有圖磚像素失敗: {e}")
             return {}
 
-    def calculate_affected_tiles_standard(self, changed_coord_keys: List[str], 
-                                         area_config: dict, zoom: int = None) -> Set[Tuple[int, int, int]]:
-        """計算受影響的標準圖磚座標 - 基於 4 decimal lat/lng 座標"""
-        if zoom is None:
-            zoom = PRIMARY_ZOOM
-            
-        # 轉換座標格式
-        changed_coords = []
-        for coord_key in changed_coord_keys:
-            try:
-                lat_str, lon_str = key_to_coords(coord_key)
-                changed_coords.append((lat_str, lon_str))
-            except ValueError:
-                print(f"警告：無法解析座標 key: {coord_key}")
-                continue
-        
-        # 使用新的標準函數計算影響的圖磚
-        area_bounds = {
-            'minLat': area_config['bounds']['minLat'],
-            'maxLat': area_config['bounds']['maxLat'],
-            'minLng': area_config['bounds']['minLng'],
-            'maxLng': area_config['bounds']['maxLng']
-        }
-        
-        affected_tiles = calculate_affected_tiles_from_coords(changed_coords, area_bounds, zoom)
-        print(f"🎯 標準座標系統計算出 {len(affected_tiles)} 個受影響圖磚 (zoom={zoom})")
-        
-        return affected_tiles
-
-    def generate_standard_tile_content(self, tile_x: int, tile_y: int, tile_z: int, 
-                                     area_config: dict, coord_states: Dict[str, int]) -> bytes:
-        """為標準座標生成圖磚內容"""
-        try:
-            from utils.coordinate_utils import tile_to_lat_lon_bounds
-            
-            # 獲取圖磚的地理邊界
-            bounds = tile_to_lat_lon_bounds(tile_x, tile_y, tile_z)
-            
-            # 建立空白圖磚
-            img = Image.new('RGBA', (TILE_SIZE, TILE_SIZE), (0, 0, 0, 0))
-            pixels = img.load()
-            
-            pixel_count = 0
-            
-            # 遍歷圖磚內的座標點
-            for coord_key, state in coord_states.items():
-                try:
-                    lat_str, lon_str = key_to_coords(coord_key)
-                    lat, lon = float(lat_str), float(lon_str)
-                    
-                    # 檢查座標是否在此圖磚範圍內
-                    if (bounds['minLat'] <= lat <= bounds['maxLat'] and
-                        bounds['minLng'] <= lon <= bounds['maxLng']):
-                        
-                        # 計算像素位置
-                        x_ratio = (lon - bounds['minLng']) / (bounds['maxLng'] - bounds['minLng'])
-                        y_ratio = (lat - bounds['minLat']) / (bounds['maxLat'] - bounds['minLat'])
-                        
-                        pixel_x = int(x_ratio * (TILE_SIZE - 1))
-                        pixel_y = TILE_SIZE - 1 - int(y_ratio * (TILE_SIZE - 1))  # 翻轉 Y 軸
-                        
-                        # 確保像素在範圍內
-                        if 0 <= pixel_x < TILE_SIZE and 0 <= pixel_y < TILE_SIZE:
-                            # 根據狀態設定顏色
-                            if state == STATE_MUDDY:
-                                pixels[pixel_x, pixel_y] = MUDDY_COLOR + (255,)  # 紅色 + 不透明
-                            else:
-                                pixels[pixel_x, pixel_y] = CLEAR_COLOR + (255,)  # 綠色 + 不透明
-                            
-                            pixel_count += 1
-                            
-                except (ValueError, IndexError):
-                    continue
-            
-            # 如果沒有像素，返回空圖磚
-            if pixel_count == 0:
-                print(f"    ℹ️ 圖磚 {tile_z}/{tile_x}/{tile_y} 沒有資料")
-                return b''
-            
-            # 轉換為 PNG
-            png_buffer = BytesIO()
-            img.save(png_buffer, format='PNG', optimize=True)
-            png_bytes = png_buffer.getvalue()
-            
-            print(f"    ✏️ 生成標準圖磚 {tile_z}/{tile_x}/{tile_y}: {pixel_count} 像素, {len(png_bytes)} bytes")
-            return png_bytes
-            
-        except Exception as e:
-            print(f"    ❌ 生成標準圖磚內容失敗 {tile_z}/{tile_x}/{tile_y}: {e}")
-            return b''
-    
     def calculate_affected_tiles(self, changed_grid_ids: List[str]) -> Set[Tuple[int, int]]:
-        """計算受影響的圖磚座標 - 向後相容版本，將逐步移除"""
-        print("⚠️ 警告：使用舊版圖磚計算，建議遷移到標準座標系統")
-        
+        """計算受影響的圖磚座標"""
         affected_tiles = set()
         for grid_id in changed_grid_ids:
             try:
                 x, y = map(int, grid_id.split('_'))
-                tile_x = x // TILE_SIZE  # 這是錯誤的轉換方法
-                tile_y = y // TILE_SIZE  # 這是錯誤的轉換方法
+                tile_x = x // TILE_SIZE
+                tile_y = y // TILE_SIZE
                 affected_tiles.add((tile_x, tile_y))
             except ValueError:
                 continue
@@ -817,43 +672,14 @@ class IntelligentTileGenerator:
         print(f"    ✏️ 合併: {existing_count} 現有 + {changed_count} 變更 = {total_pixels} 像素, 檔案 {len(png_bytes)} bytes")
         return png_bytes
 
-    def upload_tile_to_r2_standard(self, tile_x: int, tile_y: int, tile_z: int, 
-                                   png_bytes: bytes, version: str = None):
-        """上傳圖磚到 R2 - 標準 TMS 路徑格式"""
-        if not self.r2_enabled:
-            print(f"    🔧 略過上傳 (R2 未啟用): {tile_z}/{tile_x}/{tile_y}.png")
-            return
-
-        try:
-            # 使用標準 TMS 路徑: {z}/{x}/{y}.png
-            key = f"{tile_z}/{tile_x}/{tile_y}.png"
-
-            self.r2_client.put_object(
-                Bucket=self.bucket_name,
-                Key=key,
-                Body=png_bytes,
-                ContentType='image/png',
-                CacheControl='public, max-age=3600'
-            )
-
-            self.stats['tiles_uploaded'] += 1
-            print(f"    ✅ 已上傳標準圖磚: {tile_z}/{tile_x}/{tile_y}.png ({len(png_bytes)} bytes)")
-
-        except Exception as e:
-            print(f"    ❌ 上傳標準圖磚失敗 {tile_z}/{tile_x}/{tile_y}: {e}")
-            if 'stats' in self.__dict__:
-                self.stats['upload_errors'] += 1
-
     def upload_tile_to_r2(self, tile_x: int, tile_y: int, png_bytes: bytes, version: str):
-        """上傳圖磚到 R2 - 向後相容版本，將逐步移除"""
-        print("⚠️ 警告：使用舊版圖磚上傳路徑，建議遷移到標準 TMS 格式")
-        
+        """上傳圖磚到 R2"""
         if not self.r2_enabled:
             print(f"    🔧 略過上傳 (R2 未啟用): {version}/0/{tile_x}/{tile_y}.png")
             return
 
         try:
-            key = f"{version}/0/{tile_x}/{tile_y}.png"  # 舊格式
+            key = f"{version}/0/{tile_x}/{tile_y}.png"
 
             self.r2_client.put_object(
                 Bucket=self.bucket_name,
@@ -996,84 +822,16 @@ class IntelligentTileGenerator:
         except Exception as e:
             print(f"❌ 更新版本列表失敗: {e}")
 
-    def clear_changed_coords(self, area_name: str):
-        """清除變更座標標記"""
-        try:
-            self._redis_request('DEL', f'changed_coords:{area_name}')
-            print(f"🧹 變更座標標記已清除 ({area_name})")
-        except Exception as e:
-            print(f"❌ 清除變更座標標記失敗 ({area_name}): {e}")
-    
     def clear_changed_grids(self, area_name: str):
-        """清除變更標記 - 向後相容版本"""
-        self.clear_changed_coords(area_name)
-
-    def generate_standard_tiles_for_area(self, area_config: dict):
-        """為單一區域執行標準 TMS 圖磚生成"""
-        area_name = area_config['name']
-        print(f"\n🚀 === 處理區域 (標準 TMS): {area_config['displayName']} ({area_name}) ===")
-
-        # 1. 獲取變更座標
-        changed_coords = self.get_changed_coords(area_name)
-        if not changed_coords:
-            print(f"ℹ️ {area_name} 沒有座標變更，跳過圖磚生成")
-            return
-
-        print(f"📍 發現 {len(changed_coords)} 個變更座標")
-
-        # 2. 計算受影響的標準圖磚 (使用 zoom 19)
-        affected_tiles = self.calculate_affected_tiles_standard(changed_coords, area_config, PRIMARY_ZOOM)
-        print(f"🎯 需要更新 {len(affected_tiles)} 個標準圖磚 (zoom={PRIMARY_ZOOM})")
-
-        if not affected_tiles:
-            print("ℹ️ 沒有圖磚需要更新")
-            return {'success': False, 'reason': 'no_tiles_to_update'}
-
-        # 3. 讀取變更座標狀態
-        changed_states = self.read_changed_coords_states(area_name, changed_coords)
-        print(f"🔍 已讀取 {len(changed_states)} 個座標狀態")
-
-        # 4. 生成標準圖磚
-        version = datetime.now().strftime('%Y%m%d%H%M%S')
-        tiles_processed = 0
-        
-        for tile_x, tile_y, tile_z in affected_tiles:
-            try:
-                print(f"🎨 生成標準圖磚: {tile_z}/{tile_x}/{tile_y}")
-                
-                # 為標準圖磚座標生成內容
-                png_bytes = self.generate_standard_tile_content(tile_x, tile_y, tile_z, 
-                                                              area_config, changed_states)
-                
-                if png_bytes:
-                    # 上傳到標準 TMS 路徑
-                    self.upload_tile_to_r2_standard(tile_x, tile_y, tile_z, png_bytes)
-                    tiles_processed += 1
-                
-            except Exception as e:
-                print(f"❌ 生成標準圖磚失敗 {tile_z}/{tile_x}/{tile_y}: {e}")
-                continue
-
-        # 5. 清除變更標記
-        self.clear_changed_coords(area_name)
-        
-        result = {
-            'success': True,
-            'area_name': area_name,
-            'tiles_processed': tiles_processed,
-            'coords_changed': len(changed_coords),
-            'zoom_level': PRIMARY_ZOOM
-        }
-        
-        print(f"✅ 標準圖磚生成完成: {tiles_processed} 個圖磚")
-        return result
+        """清除變更標記"""
+        try:
+            self._redis_request('DEL', f'changed_grids:{area_name}')
+            print(f"🧹 變更標記已清除 ({area_name})")
+        except Exception as e:
+            print(f"❌ 清除變更標記失敗 ({area_name}): {e}")
 
     def generate_intelligent_tiles_for_area(self, area_config: dict):
-        """為單一區域執行智慧增量圖磚生成 - 向後相容版本"""
-        # 優先使用新的標準 TMS 生成
-        return self.generate_standard_tiles_for_area(area_config)
-        
-        # 保留舊版程式碼供參考
+        """為單一區域執行智慧增量圖磚生成"""
         area_name = area_config['name']
         print(f"\n🚀 === 處理區域: {area_config['displayName']} ({area_name}) ===")
 
