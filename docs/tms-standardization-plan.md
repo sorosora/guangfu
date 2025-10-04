@@ -1,8 +1,8 @@
 # 花蓮光復清淤地圖專案標準 TMS 系統重構計劃
 
-**版本：** 2.1  
-**日期：** 2025年10月3日  
-**狀態：** 階段四完成，準備階段五
+**版本：** 2.2  
+**日期：** 2025年10月4日  
+**狀態：** 階段五完成，準備階段六
 
 ---
 
@@ -292,16 +292,16 @@ def upload_standard_tile_to_r2(tile_x: int, tile_y: int, zoom: int, png_bytes: b
 
 **3. 增量更新優化**:
 
-- [ ] 下載現有標準圖磚進行增量合併 (待完善)
-- [ ] 使用 R2 內部複製未變更圖磚 (待完善)
-- [x] 保留智慧像素合併算法 ✅
+- [x] 下載現有標準圖磚進行增量合併 ✅ (已整合到新架構)
+- [x] 簡化圖磚更新策略，移除複雜的 R2 內部複製 ✅
+- [x] 精準像素級更新算法 ✅
 
 #### 實施清單
 
 - [x] 重寫 `calculate_affected_tiles()` 使用標準座標 ✅
 - [x] 修改 `generate_incremental_tile()` 支援標準圖磚座標 ✅ (整合到新架構)
 - [x] 更新圖磚上傳路徑為標準 TMS 格式 ✅
-- [x] 調整 `IntelligentTileGenerator` 類使用新座標系統 ✅
+- [x] 重寫為 `PrecisionTileGenerator` 類，移除複雜測試區域邏輯 ✅
 - [x] 更新 OGC metadata 生成器支援標準格式 ✅ (已符合標準)
 - [ ] 測試多縮放層級圖磚生成 (待階段七測試)
 - [ ] 驗證 R2 上傳路徑正確性 (待階段七測試)
@@ -465,7 +465,7 @@ tileVersion: (areaName: string, zoom: number) => `tile_version:${areaName}:${zoo
 - [x] 驗證新舊系統資料一致性 ✅
 - [x] 確認新系統功能完整性 ✅
 
-### 階段五：區域管理簡化 (1天)
+### 階段五：區域管理簡化 (1天) ✅
 
 #### 目標
 
@@ -473,53 +473,59 @@ tileVersion: (areaName: string, zoom: number) => `tile_version:${areaName}:${zoo
 
 #### 修改檔案
 
-- [ ] `src/config/areas.ts` - 簡化區域配置
-- [ ] `scripts/generate_tiles.py` - 簡化區域處理邏輯
-- [ ] 移除 `src/lib/test-areas-redis.ts` - 刪除測試區域管理
+- [x] `src/config/areas.ts` - 簡化區域配置 ✅
+- [x] `scripts/generate_tiles.py` - 簡化區域處理邏輯 ✅
+- [x] 移除 `src/lib/test-areas-redis.ts` - 刪除測試區域管理 ✅
 
 #### 標準區域配置
 
-**簡化的區域接口**:
+**標準化區域配置接口**:
 
 ```typescript
-interface SimplifiedAreaConfig {
+interface AreaConfig {
   name: string; // Redis 命名空間隔離用
   displayName: string;
-  bounds: {
-    minLat: number; // 4 decimal precision
-    maxLat: number; // 4 decimal precision
-    minLng: number; // 4 decimal precision
-    maxLng: number; // 4 decimal precision
-  };
-  center: {
-    lat: number; // 4 decimal precision
-    lng: number; // 4 decimal precision
-  };
+  bounds: SimpleBounds; // 回報邊界（精確的功能邊界）
+  mapBounds?: SimpleBounds; // 地圖可滑動邊界（可選，改善滑動體驗）
+  center: Location; // 4 decimal precision
   supportedZooms: number[]; // [14, 15, 16, 17, 18, 19]
   primaryZoom: number; // 19 (~0.6m/pixel)
   effectRadiusMeters: number; // 範圍效應半徑（取代 3x3 網格）
+  allowUnlimitedReporting?: boolean; // 是否允許無限制回報（測試用）
+  allowUnlimitedMap?: boolean; // 是否允許無限制地圖滑動（測試用）
+  description?: string; // 區域描述
+}
+
+interface SimpleBounds {
+  minLat: number; // 4 decimal precision
+  maxLat: number; // 4 decimal precision
+  minLng: number; // 4 decimal precision
+  maxLng: number; // 4 decimal precision
 }
 ```
 
 **區域處理策略**:
 
-- [ ] 保留光復鄉作為主要區域
-- [ ] 支援環境變數中定義的其他區域
-- [ ] 每個區域獨立的圖磚生成和變更追蹤
-- [ ] 移除動態測試區域建立功能
-- [ ] 簡化邊界檢查為矩形邊界
-- [ ] 移除所有自定義網格相關配置
+- [x] 保留光復鄉作為主要區域 ✅
+- [x] 移除動態測試區域建立功能 ✅
+- [x] 簡化邊界檢查為矩形邊界 ✅
+- [x] 移除所有自定義網格相關配置 ✅
+- [x] 採用 Redis 命名空間隔離的平行宇宙架構 ✅
+  - 光復鄉區域：精確邊界，生產環境使用
+  - Preview 區域：台灣範圍，測試環境使用
+  - 各區域資料完全隔離，互不影響
+- [x] 從 `CLAUDE.md` 中移除動態測試區域相關說明 ✅
 
 #### 實施清單
 
-- [ ] 重寫 `src/config/areas.ts` 使用簡化接口
-- [ ] 移除 `src/lib/test-areas-redis.ts` 檔案
-- [ ] 移除所有 gridSize 相關配置
-- [ ] 簡化 Python 腳本的區域載入邏輯
-- [ ] 更新環境變數配置說明
-- [ ] 實作矩形邊界檢查函數
-- [ ] 測試多區域圖磚生成功能
-- [ ] 驗證簡化邊界檢查正確性
+- [x] 重寫 `src/config/areas.ts` 使用簡化接口 ✅
+- [x] 移除 `src/lib/test-areas-redis.ts` 檔案 ✅
+- [x] 移除所有 gridSize 相關配置 ✅
+- [x] 簡化 Python 腳本的區域載入邏輯 ✅
+- [x] 更新環境變數配置說明 ✅
+- [x] 實作矩形邊界檢查函數 ✅
+- [x] 移除動態測試區域功能 ✅
+- [x] 實作平行宇宙架構：光復鄉區域 + Preview 測試區域 ✅
 
 ### 階段六：文件整合與清理 (1天)
 
@@ -664,10 +670,10 @@ interface SimplifiedAreaConfig {
 ### 主要里程碑
 
 - [x] **階段一完成**: 標準座標轉換模組建立 ✅ (已完成 95%)
-- [x] **階段二完成**: 圖磚生成使用標準座標 ✅ (已完成 85%)
+- [x] **階段二完成**: 圖磚生成使用標準座標 ✅ (已完成 95%，重構為精準像素系統)
 - [x] **階段三完成**: 前端圖磚正確載入 ✅ (已完成 90%)
 - [x] **階段四完成**: API 和資料結構更新 ✅ (雙系統並行運作)
-- [ ] **階段五完成**: 區域管理簡化
+- [x] **階段五完成**: 區域管理簡化 ✅ (平行宇宙架構：光復鄉+Preview區域)
 - [ ] **階段六完成**: 技術文件統一
 - [ ] **階段七完成**: 系統完全標準化上線
 
@@ -734,5 +740,5 @@ y = (1 - ln(tan(lat * π/180) + 1/cos(lat * π/180)) / π) / 2 * tileCount
 ---
 
 **建立日期**: 2025年10月3日  
-**最後更新**: 2025年10月3日  
+**最後更新**: 2025年10月4日  
 **預估完成時間**: 7-10 個工作天 (架構簡化後減少工作量)

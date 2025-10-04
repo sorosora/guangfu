@@ -5,7 +5,7 @@
  * 使用 Web Mercator 投影 (EPSG:3857) 和標準 z/x/y 座標系統
  */
 
-import { Location } from '@/types/map';
+// Location type imported inline to avoid unused import warning
 
 // TMS 技術規格常數
 export const TMS_CONFIG = {

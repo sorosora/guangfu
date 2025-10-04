@@ -14,11 +14,18 @@ export class ApiClient {
   /**
    * 發送回報請求到後端 API
    * @param reportData 回報資料
+   * @param areaName 區域名稱（可選，預設使用光復鄉）
    * @returns API 回應
    */
-  async submitReport(reportData: ReportData): Promise<ApiResponse> {
+  async submitReport(reportData: ReportData, areaName?: string): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/report`, {
+      // 建立 URL 查詢參數
+      const url = new URL(`${this.baseUrl}/api/report`, window.location.origin);
+      if (areaName) {
+        url.searchParams.set('area', areaName);
+      }
+
+      const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,8 +143,8 @@ export function useApiClient() {
   /**
    * 提交回報
    */
-  const submitReport = async (reportData: ReportData): Promise<ApiResponse> => {
-    return await apiClient.submitReport(reportData);
+  const submitReport = async (reportData: ReportData, areaName?: string): Promise<ApiResponse> => {
+    return await apiClient.submitReport(reportData, areaName);
   };
 
   /**
@@ -195,7 +202,8 @@ export async function withRetry<T>(
  */
 export async function submitReportWithRetry(
   reportData: ReportData,
-  maxRetries: number = 2
+  maxRetries: number = 2,
+  areaName?: string
 ): Promise<ApiResponse> {
-  return await withRetry(() => apiClient.submitReport(reportData), maxRetries, 1000);
+  return await withRetry(() => apiClient.submitReport(reportData, areaName), maxRetries, 1000);
 }

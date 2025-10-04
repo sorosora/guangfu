@@ -152,7 +152,7 @@ class TMSMetadataGenerator:
         }
 
     def generate_version_metadata(self, version: str, stats: Dict, 
-                                affected_tiles: List, grid_coverage: Dict) -> Dict:
+                                affected_tiles: List, grid_coverage: Dict, zoom_level: int = 14) -> Dict:
         """生成特定版本的 metadata"""
         version_time = datetime.fromtimestamp(int(version))
         
@@ -164,8 +164,8 @@ class TMSMetadataGenerator:
             "created": version_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "bounds": [self.min_lon, self.min_lat, self.max_lon, self.max_lat],
-            "minzoom": 0,
-            "maxzoom": 0,
+            "minzoom": zoom_level,
+            "maxzoom": zoom_level,
             "attribution": "資料來源：民眾即時回報系統",
             "license": "CC BY 4.0",
             "generation_stats": {
@@ -203,9 +203,9 @@ class TMSMetadataGenerator:
                 "confidence_level": "high"
             },
             "access_urls": {
-                "tile_pattern": f"{version}/0/{{x}}/{{y}}.png",
+                "tile_pattern": f"{zoom_level}/{{x}}/{{y}}.png",
                 "metadata": f"{version}/metadata.json",
-                "bounds": f"{version}/bounds/0.json"
+                "bounds": f"{version}/bounds/{zoom_level}.json"
             },
             "ogc_compliance": {
                 "standard": "OGC Two Dimensional Tile Matrix Set",
@@ -251,6 +251,61 @@ class TMSMetadataGenerator:
             "sparse_coverage": True,
             "last_updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
+
+    def collect_existing_versions(self, r2_client, bucket_name: str, area_name: str) -> List[str]:
+        """
+        從 R2 掃描現有版本目錄
+        
+        Args:
+            r2_client: boto3 S3 客戶端
+            bucket_name: R2 bucket 名稱
+            area_name: 區域名稱
+            
+        Returns:
+            List[str]: 版本號列表，按時間戳排序
+        """
+        try:
+            # 掃描 {area_name}/ 下的所有版本目錄
+            paginator = r2_client.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(
+                Bucket=bucket_name,
+                Prefix=f"{area_name}/",
+                Delimiter='/'
+            )
+            
+            versions = []
+            for page in page_iterator:
+                if 'CommonPrefixes' in page:
+                    for prefix in page['CommonPrefixes']:
+                        prefix_name = prefix['Prefix']
+                        # 提取版本號：{area_name}/{version}/
+                        if prefix_name.count('/') == 2:
+                            version = prefix_name.split('/')[1]
+                            # 檢查是否為有效的 Unix timestamp（10位數字以上）
+                            if version.isdigit() and len(version) >= 10:
+                                # 驗證是否為真實版本目錄（包含 metadata.json）
+                                try:
+                                    r2_client.head_object(
+                                        Bucket=bucket_name, 
+                                        Key=f"{area_name}/{version}/metadata.json"
+                                    )
+                                    versions.append(version)
+                                    print(f"✅ 有效版本: {version}")
+                                except:
+                                    print(f"⚠️ 跳過無效版本目錄: {version} (缺少 metadata.json)")
+                                    continue
+                            else:
+                                print(f"⚠️ 跳過圖磚目錄: {version} (非時間戳格式)")
+            
+            # 按時間戳排序（最新的在前）
+            versions.sort(key=int, reverse=True)
+            print(f"📂 掃描到 {len(versions)} 個版本: {versions[:5]}{'...' if len(versions) > 5 else ''}")
+            
+            return versions
+            
+        except Exception as e:
+            print(f"❌ 掃描版本目錄失敗: {e}")
+            return []
 
 def create_metadata_files():
     """創建範例 metadata 檔案"""

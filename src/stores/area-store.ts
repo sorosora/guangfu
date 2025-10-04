@@ -1,10 +1,14 @@
 import { atom } from 'jotai';
-import { AreaConfig, getDefaultAreaConfig } from '@/config/areas';
+import { AreaConfig, getAreaConfig } from '@/config/areas';
 
 /**
- * 當前區域類型
+ * 區域狀態管理（雙區域版本：guangfu + preview）
  */
-export type CurrentAreaType = 'guangfu' | string; // guangfu 或測試區域 ID
+
+/**
+ * 當前區域類型（支援光復鄉和測試區域）
+ */
+export type CurrentAreaType = 'guangfu' | 'preview';
 
 /**
  * 本地儲存鍵值
@@ -12,18 +16,23 @@ export type CurrentAreaType = 'guangfu' | string; // guangfu 或測試區域 ID
 const STORAGE_KEY = 'guangfu_current_area';
 
 /**
- * 獲取初始區域類型（從 localStorage）
+ * 獲取初始區域類型（從 localStorage 讀取，預設為光復鄉）
  */
 function getInitialAreaType(): CurrentAreaType {
   if (typeof window === 'undefined') {
-    return 'guangfu';
+    return 'guangfu'; // SSR 時預設為光復鄉
   }
 
   try {
-    return localStorage.getItem(STORAGE_KEY) || 'guangfu';
-  } catch {
-    return 'guangfu';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'guangfu' || stored === 'preview') {
+      return stored as CurrentAreaType;
+    }
+  } catch (error) {
+    console.warn('無法讀取儲存的區域類型:', error);
   }
+
+  return 'guangfu'; // 預設為光復鄉
 }
 
 /**
@@ -32,42 +41,31 @@ function getInitialAreaType(): CurrentAreaType {
 export const currentAreaTypeAtom = atom<CurrentAreaType>(getInitialAreaType());
 
 /**
- * 當前區域配置 Atom（衍生狀態）
- * 自動根據 currentAreaTypeAtom 獲取對應的區域配置
+ * 當前區域配置 Atom（動態根據區域類型返回配置）
  */
-export const currentAreaConfigAtom = atom(async (get): Promise<AreaConfig> => {
+export const currentAreaConfigAtom = atom<AreaConfig>((get) => {
   const areaType = get(currentAreaTypeAtom);
-
-  if (areaType === 'guangfu') {
-    return getDefaultAreaConfig();
-  }
-
-  try {
-    // 呼叫 API 獲取測試區域配置
-    const response = await fetch(`/api/current-area?areaId=${encodeURIComponent(areaType)}`);
-
-    if (!response.ok) {
-      throw new Error(`API 呼叫失敗: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success && result.data) {
-      return result.data;
-    } else {
-      console.warn('API 返回失敗，使用預設配置:', result.message);
-      return getDefaultAreaConfig();
-    }
-  } catch (error) {
-    console.error('獲取測試區域配置失敗，使用預設配置:', error);
-    return getDefaultAreaConfig();
-  }
+  return getAreaConfig(areaType);
 });
 
 /**
- * 切換區域動作 Atom
+ * 切換區域動作 Atom（支援 guangfu 和 preview）
  */
 export const switchAreaAtom = atom(null, (get, set, areaType: CurrentAreaType) => {
+  // 驗證區域類型
+  if (areaType !== 'guangfu' && areaType !== 'preview') {
+    console.warn(`不支援的區域類型: ${areaType}`);
+    return;
+  }
+
+  const currentAreaType = get(currentAreaTypeAtom);
+
+  // 如果已經是目標區域，不需要切換
+  if (currentAreaType === areaType) {
+    console.log(`已經在 ${areaType} 區域，無需切換`);
+    return;
+  }
+
   // 更新 Jotai 狀態
   set(currentAreaTypeAtom, areaType);
 
@@ -75,6 +73,7 @@ export const switchAreaAtom = atom(null, (get, set, areaType: CurrentAreaType) =
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(STORAGE_KEY, areaType);
+      console.log(`已切換到 ${areaType} 區域並儲存設定`);
     } catch (error) {
       console.warn('無法儲存區域類型到 localStorage:', error);
     }
@@ -82,18 +81,10 @@ export const switchAreaAtom = atom(null, (get, set, areaType: CurrentAreaType) =
 });
 
 /**
- * 是否在測試區域 Atom（衍生狀態）
+ * 當前區域顯示名稱 Atom
  */
-export const isInTestAreaAtom = atom((get) => {
-  const areaType = get(currentAreaTypeAtom);
-  return areaType !== 'guangfu';
-});
-
-/**
- * 當前區域顯示名稱 Atom（衍生狀態）
- */
-export const currentAreaDisplayNameAtom = atom(async (get): Promise<string> => {
-  const areaConfig = await get(currentAreaConfigAtom);
+export const currentAreaDisplayNameAtom = atom<string>((get) => {
+  const areaConfig = get(currentAreaConfigAtom);
   return areaConfig.displayName;
 });
 
@@ -105,17 +96,23 @@ export const switchToGuangfuAtom = atom(null, (get, set) => {
 });
 
 /**
- * 切換到測試區域的便利函數 Atom
+ * 切換到預覽區域的便利函數 Atom
  */
-export const switchToTestAreaAtom = atom(null, (get, set, testAreaId: string) => {
-  set(switchAreaAtom, testAreaId);
+export const switchToPreviewAtom = atom(null, (get, set) => {
+  set(switchAreaAtom, 'preview');
 });
 
 /**
- * 區域變更監聽器 Atom（用於觸發副作用）
+ * 獲取支援的區域列表
  */
-export const areaChangeListenerAtom = atom(null, () => {
-  // 這個 atom 可以用來註冊區域變更時的回調函數
-  // 主要用於頁面組件監聽區域變化並執行相應操作
-  // Currently a placeholder for future implementation
-});
+export const supportedAreasAtom = atom<Array<{ id: CurrentAreaType; name: string }>>(() => [
+  { id: 'guangfu', name: '花蓮光復鄉' },
+  { id: 'preview', name: 'Preview 測試區域' },
+]);
+
+/**
+ * 驗證區域類型是否有效
+ */
+export function validateAreaType(areaType: string): areaType is CurrentAreaType {
+  return areaType === 'guangfu' || areaType === 'preview';
+}

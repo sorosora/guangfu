@@ -9,9 +9,8 @@ import { Loading } from '@/components/ui/loading';
 import { PermissionModal } from '@/components/ui/permission-modal';
 import { WelcomeButtons } from '@/components/ui/welcome-buttons';
 import { getCurrentPosition, watchPosition, clearWatch } from '@/lib/geolocation';
-import { isWithinBounds } from '@/lib/coordinates';
 import { Location, ReportData, LayerVisibility } from '@/types/map';
-import { getDefaultAreaConfig } from '@/config/areas';
+import { getDefaultAreaConfig, canReportAtLocation } from '@/config/areas';
 import { useAtom } from 'jotai';
 import { currentAreaConfigAtom, currentAreaDisplayNameAtom } from '@/stores/area-store';
 import { submitReportWithRetry, ApiError } from '@/lib/api-client';
@@ -91,11 +90,11 @@ export default function Home() {
       setUserLocation(location);
       setAppState('granted');
 
-      // 使用當前的區域配置
-      const withinBounds = isWithinBounds(location, currentAreaConfig);
-      isWithinBoundsRef.current = withinBounds;
+      // 使用新的回報邊界檢查
+      const canReport = canReportAtLocation(location.lat, location.lon, currentAreaConfig);
+      isWithinBoundsRef.current = canReport;
 
-      if (!withinBounds) {
+      if (!canReport && !currentAreaConfig.allowUnlimitedReporting) {
         toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
       } else {
         toast.success('已取得您的位置');
@@ -106,19 +105,27 @@ export default function Home() {
         async (newLocation) => {
           setUserLocation(newLocation);
 
-          // 使用當前的區域配置
-          const newWithinBounds = isWithinBounds(newLocation, currentAreaConfig);
+          // 使用新的回報邊界檢查
+          const newCanReport = canReportAtLocation(
+            newLocation.lat,
+            newLocation.lon,
+            currentAreaConfig
+          );
 
-          // 只在邊界狀態改變時顯示 toast
-          if (isWithinBoundsRef.current !== null && isWithinBoundsRef.current !== newWithinBounds) {
-            if (!newWithinBounds) {
+          // 只在邊界狀態改變時顯示 toast（僅限於非無限制回報的區域）
+          if (
+            !currentAreaConfig.allowUnlimitedReporting &&
+            isWithinBoundsRef.current !== null &&
+            isWithinBoundsRef.current !== newCanReport
+          ) {
+            if (!newCanReport) {
               toast.warning(`您已離開${currentAreaConfig.displayName}範圍`);
             } else {
               toast.success(`歡迎回到${currentAreaConfig.displayName}範圍`);
             }
           }
 
-          isWithinBoundsRef.current = newWithinBounds;
+          isWithinBoundsRef.current = newCanReport;
         },
         (error) => {
           if (error.code === 1) {
@@ -210,8 +217,8 @@ export default function Home() {
       }
 
       try {
-        // 檢查是否在當前區域範圍內
-        if (!isWithinBounds(userLocation, currentAreaConfig)) {
+        // 使用新的回報邊界檢查邏輯（考慮無限制回報設定）
+        if (!canReportAtLocation(userLocation.lat, userLocation.lon, currentAreaConfig)) {
           toast.error(`您不在${currentAreaConfig.displayName}範圍內，無法進行回報`);
           return;
         }
@@ -220,11 +227,10 @@ export default function Home() {
           lat: userLocation.lat,
           lon: userLocation.lon,
           state,
-          areaConfig: currentAreaConfig,
         };
 
-        // 調用後端 API
-        const response = await submitReportWithRetry(reportData, 2);
+        // 調用後端 API（傳入當前區域名稱）
+        const response = await submitReportWithRetry(reportData, 2, currentAreaConfig.name);
 
         if (response.success) {
           const stateText = state === 1 ? '有淤泥' : '已清除';
@@ -296,13 +302,18 @@ export default function Home() {
   const handleAreaChange = useCallback(() => {
     // 檢查使用者位置是否在新區域內
     if (userLocation) {
-      const withinBounds = isWithinBounds(userLocation, currentAreaConfig);
-      isWithinBoundsRef.current = withinBounds;
+      const canReport = canReportAtLocation(userLocation.lat, userLocation.lon, currentAreaConfig);
+      isWithinBoundsRef.current = canReport;
 
-      if (!withinBounds) {
-        toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
+      // 只有在非無限制回報的區域才顯示邊界提示
+      if (!currentAreaConfig.allowUnlimitedReporting) {
+        if (!canReport) {
+          toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
+        } else {
+          toast.success(`已切換到${currentAreaConfig.displayName}`);
+        }
       } else {
-        toast.success(`已切換到${currentAreaConfig.displayName}`);
+        toast.success(`已切換到${currentAreaConfig.displayName}（無限制模式）`);
       }
     }
   }, [userLocation, currentAreaConfig]);

@@ -21,7 +21,7 @@ class TMSConfig:
     TILE_SIZE = 256  # 像素
     MAX_ZOOM = 19
     MIN_ZOOM = 14
-    PRIMARY_ZOOM = 19  # 主要縮放層級 (~0.6m/pixel)
+    PRIMARY_ZOOM = 14  # 主要縮放層級 (~9.5m/pixel, 0.0001°≈1.2px)
     
     # 4 decimal 精度設定
     COORD_PRECISION = 4  # ~11m 精度
@@ -73,6 +73,7 @@ def pixel_to_tile(pixel_x: float, pixel_y: float) -> Tuple[int, int]:
 def lat_lon_to_tile_coords(lat: float, lon: float, zoom: int) -> Tuple[int, int, int]:
     """
     GPS 座標直接轉換為標準圖磚座標 (Web Mercator)
+    使用標準 OSM/Google Maps 瓦片計算公式
     
     Args:
         lat: 緯度
@@ -82,14 +83,22 @@ def lat_lon_to_tile_coords(lat: float, lon: float, zoom: int) -> Tuple[int, int,
     Returns:
         Tuple[int, int, int]: (tile_x, tile_y, zoom)
     """
-    x_pixel, y_pixel = lat_lon_to_pixel(lat, lon, zoom)
-    tile_x, tile_y = pixel_to_tile(x_pixel, y_pixel)
+    import math
+    
+    # 標準 Web Mercator 瓦片計算
+    lat_rad = math.radians(lat)
+    n = 2.0 ** zoom
+    
+    tile_x = int((lon + 180.0) / 360.0 * n)
+    tile_y = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
+    
     return (tile_x, tile_y, zoom)
 
 
 def tile_to_lat_lon_bounds(tile_x: int, tile_y: int, zoom: int) -> Dict[str, float]:
     """
     圖磚座標轉換為 GPS 邊界
+    使用標準 OSM/Google Maps 瓦片計算公式
     
     Args:
         tile_x: 圖磚 X 座標
@@ -99,24 +108,21 @@ def tile_to_lat_lon_bounds(tile_x: int, tile_y: int, zoom: int) -> Dict[str, flo
     Returns:
         Dict[str, float]: {'minLat', 'maxLat', 'minLng', 'maxLng'}
     """
-    pixel_count = 2 ** zoom * TMSConfig.TILE_SIZE
+    import math
     
-    # 計算圖磚的像素邊界
-    min_x_pixel = tile_x * TMSConfig.TILE_SIZE
-    max_x_pixel = (tile_x + 1) * TMSConfig.TILE_SIZE
-    min_y_pixel = tile_y * TMSConfig.TILE_SIZE
-    max_y_pixel = (tile_y + 1) * TMSConfig.TILE_SIZE
+    # 標準 Web Mercator 瓦片邊界計算
+    n = 2.0 ** zoom
     
-    # 轉換為經緯度
-    min_lng = (min_x_pixel / pixel_count) * 360.0 - 180.0
-    max_lng = (max_x_pixel / pixel_count) * 360.0 - 180.0
+    # 經度計算
+    min_lng = tile_x / n * 360.0 - 180.0
+    max_lng = (tile_x + 1) / n * 360.0 - 180.0
     
-    # 緯度轉換 (逆 Mercator 投影)
-    max_lat_y = (min_y_pixel / pixel_count) * 2.0 - 1.0
-    min_lat_y = (max_y_pixel / pixel_count) * 2.0 - 1.0
+    # 緯度計算 (逆 Web Mercator 投影)
+    max_lat_n = math.pi * (1 - 2 * tile_y / n)
+    min_lat_n = math.pi * (1 - 2 * (tile_y + 1) / n)
     
-    max_lat = math.degrees(math.atan(math.sinh(math.pi * (1 - max_lat_y))))
-    min_lat = math.degrees(math.atan(math.sinh(math.pi * (1 - min_lat_y))))
+    max_lat = math.degrees(math.atan(math.sinh(max_lat_n)))
+    min_lat = math.degrees(math.atan(math.sinh(min_lat_n)))
     
     return {
         'minLat': min_lat,
@@ -161,9 +167,10 @@ def coords_to_key(lat: float, lon: float) -> str:
 def key_to_coords(key: str) -> Tuple[str, str]:
     """
     Redis key 轉換為座標
+    支援多種格式: "lat_lon", "[\"lat, lon\"]", "lat,lon"
     
     Args:
-        key: Redis key 格式 "lat_lon"
+        key: Redis key 格式
     
     Returns:
         Tuple[str, str]: (lat_str, lon_str)
@@ -171,11 +178,34 @@ def key_to_coords(key: str) -> Tuple[str, str]:
     Raises:
         ValueError: 無效的 key 格式
     """
-    parts = key.split('_')
-    if len(parts) != 2:
-        raise ValueError(f"無效的座標 key 格式: {key}")
+    import json
     
-    return (parts[0], parts[1])
+    # 嘗試 JSON 陣列格式 ["lat, lon"]
+    if key.startswith('[') and key.endswith(']'):
+        try:
+            parsed = json.loads(key)
+            if isinstance(parsed, list) and len(parsed) == 1:
+                coord_str = parsed[0]
+                if ',' in coord_str:
+                    parts = [p.strip() for p in coord_str.split(',')]
+                    if len(parts) == 2:
+                        return parts[0], parts[1]
+        except json.JSONDecodeError:
+            pass
+    
+    # 嘗試逗號分隔格式 "lat,lon"
+    if ',' in key and '_' not in key:
+        parts = [p.strip() for p in key.split(',')]
+        if len(parts) == 2:
+            return parts[0], parts[1]
+    
+    # 標準下劃線分隔格式 "lat_lon"
+    if '_' in key:
+        parts = key.split('_')
+        if len(parts) == 2:
+            return parts[0], parts[1]
+    
+    raise ValueError(f"無效的座標 key 格式: {key}")
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -356,3 +386,59 @@ def get_recommended_zoom(bounds: Dict[str, float]) -> int:
         return 15
     else:
         return 14
+
+
+def lat_lon_to_tile_pixel(lat: float, lon: float, tile_x: int, tile_y: int, zoom: int) -> Tuple[int, int]:
+    """
+    精確計算經緯度在特定圖磚內的像素位置
+    
+    Args:
+        lat: 緯度
+        lon: 經度  
+        tile_x: 圖磚 X 座標
+        tile_y: 圖磚 Y 座標
+        zoom: 縮放層級
+    
+    Returns:
+        Tuple[int, int]: (pixel_x, pixel_y) 在圖磚內的像素位置 (0-255)
+    """
+    # 獲取圖磚邊界
+    tile_bounds = tile_to_lat_lon_bounds(tile_x, tile_y, zoom)
+    
+    # 確保座標在圖磚範圍內
+    if not (tile_bounds['minLat'] <= lat <= tile_bounds['maxLat'] and
+            tile_bounds['minLng'] <= lon <= tile_bounds['maxLng']):
+        raise ValueError(f"座標 ({lat}, {lon}) 不在圖磚 {tile_x}/{tile_y} 範圍內")
+    
+    # 計算相對位置 (0.0 ~ 1.0)
+    x_ratio = (lon - tile_bounds['minLng']) / (tile_bounds['maxLng'] - tile_bounds['minLng'])
+    y_ratio = (lat - tile_bounds['minLat']) / (tile_bounds['maxLat'] - tile_bounds['minLat'])
+    
+    # 轉換為像素座標 (0 ~ 255)
+    pixel_x = int(x_ratio * (TMSConfig.TILE_SIZE - 1))
+    pixel_y = TMSConfig.TILE_SIZE - 1 - int(y_ratio * (TMSConfig.TILE_SIZE - 1))  # 翻轉 Y 軸
+    
+    # 確保在有效範圍內
+    pixel_x = max(0, min(pixel_x, TMSConfig.TILE_SIZE - 1))
+    pixel_y = max(0, min(pixel_y, TMSConfig.TILE_SIZE - 1))
+    
+    return (pixel_x, pixel_y)
+
+
+def is_coord_in_tile(lat: float, lon: float, tile_x: int, tile_y: int, zoom: int) -> bool:
+    """
+    檢查經緯度座標是否在指定圖磚範圍內
+    
+    Args:
+        lat: 緯度
+        lon: 經度
+        tile_x: 圖磚 X 座標
+        tile_y: 圖磚 Y 座標  
+        zoom: 縮放層級
+    
+    Returns:
+        bool: 是否在圖磚範圍內
+    """
+    tile_bounds = tile_to_lat_lon_bounds(tile_x, tile_y, zoom)
+    return (tile_bounds['minLat'] <= lat <= tile_bounds['maxLat'] and
+            tile_bounds['minLng'] <= lon <= tile_bounds['maxLng'])

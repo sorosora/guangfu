@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Circle } from 'react-leaflet';
 import { Location, LayerVisibility } from '@/types/map';
-import { AreaConfig } from '@/config/areas';
+import { AreaConfig, SimpleBounds, getMapBounds } from '@/config/areas';
 import CustomTileLayer from './CustomTileLayer';
 import ManualAnnotationLayer from './ManualAnnotationLayer';
 import KMZLayer from './KMZLayer';
@@ -12,6 +12,15 @@ import 'leaflet/dist/leaflet.css';
 
 // 延遲載入 Leaflet 以避免 SSR 問題
 let L: typeof import('leaflet') | null = null;
+
+// 工具函數：將 SimpleBounds 轉換為 Leaflet 邊界
+function simpleBoundsToLeafletBounds(bounds: SimpleBounds) {
+  if (!L) return null;
+  return L.latLngBounds([
+    [bounds.minLat, bounds.minLng], // 西南角
+    [bounds.maxLat, bounds.maxLng], // 東北角
+  ]);
+}
 
 interface MapProps {
   center?: Location;
@@ -68,22 +77,34 @@ function MapController({
   return null;
 }
 
-// 地圖邊界控制元件
+// 地圖邊界控制元件（支援彈性邊界：回報邊界 vs 地圖可滑動邊界）
 function MapBoundsController({ areaConfig }: { areaConfig: AreaConfig }) {
   const map = useMap();
 
   useEffect(() => {
     if (!L || !map) return;
 
-    // 計算新的邊界
-    const bounds = L.latLngBounds([
-      [areaConfig.bounds.southWest.lat, areaConfig.bounds.southWest.lon],
-      [areaConfig.bounds.northEast.lat, areaConfig.bounds.northEast.lon],
-    ]);
+    // 獲取地圖邊界（考慮無限制地圖和 mapBounds 設定）
+    const mapBoundsConfig = getMapBounds(areaConfig);
 
-    // 更新地圖邊界和視圖
-    map.setMaxBounds(bounds);
-    map.fitBounds(bounds, { padding: [20, 20] });
+    if (mapBoundsConfig === null) {
+      // 如果允許無限制地圖，清除邊界限制
+      map.setMaxBounds(undefined);
+      console.log(`${areaConfig.displayName}: 地圖無邊界限制`);
+    } else {
+      // 使用配置的地圖邊界
+      const bounds = simpleBoundsToLeafletBounds(mapBoundsConfig);
+      if (!bounds) return;
+
+      map.setMaxBounds(bounds);
+      console.log(`${areaConfig.displayName}: 地圖邊界已設定`);
+    }
+
+    // 設定初始視圖到區域中心（不論是否有邊界限制）
+    const centerBounds = simpleBoundsToLeafletBounds(areaConfig.bounds);
+    if (centerBounds) {
+      map.fitBounds(centerBounds, { padding: [20, 20] });
+    }
   }, [areaConfig, map]);
 
   return null;
@@ -282,19 +303,26 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     );
   }
 
-  // 計算地圖邊界（使用當前區域配置）
-  const bounds = L.latLngBounds([
-    [areaConfig.bounds.southWest.lat, areaConfig.bounds.southWest.lon],
-    [areaConfig.bounds.northEast.lat, areaConfig.bounds.northEast.lon],
-  ]);
+  // 計算初始地圖邊界（使用回報邊界作為預設視圖）
+  const bounds = simpleBoundsToLeafletBounds(areaConfig.bounds);
+
+  if (!bounds) {
+    console.error('無法計算地圖邊界');
+    return <div>地圖載入失敗</div>;
+  }
+
+  // 獲取實際的地圖邊界配置（可能是 null、mapBounds 或 bounds）
+  const mapBoundsConfig = getMapBounds(areaConfig);
 
   return (
     <MapContainer
       center={[mapCenter.lat, mapCenter.lon]}
       zoom={17} // 調整為適當的標準縮放層級
       style={{ height: '100%', width: '100%' }}
-      maxBounds={bounds}
-      maxBoundsViscosity={1.0}
+      maxBounds={
+        mapBoundsConfig ? simpleBoundsToLeafletBounds(mapBoundsConfig) || undefined : undefined
+      }
+      maxBoundsViscosity={mapBoundsConfig ? 1.0 : 0}
       minZoom={14} // 區域概覽
       maxZoom={19} // 最高精度 (~0.6m/pixel)
       zoomControl={false}

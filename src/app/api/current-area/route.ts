@@ -1,97 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  HttpStatus,
+  ErrorMessages,
+} from '@/lib/validation';
 import { getDefaultAreaConfig } from '@/config/areas';
-import { getTestArea, testAreaToAreaConfig } from '@/lib/test-areas-redis';
-import { createSuccessResponse, createErrorResponse, HttpStatus } from '@/lib/validation';
 
 /**
- * 獲取指定區域配置
- * 支援查詢參數: ?areaId=xxx
+ * GET /api/current-area - 獲取當前區域配置
+ *
+ * 階段五：簡化為固定光復鄉配置
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const areaId = request.nextUrl.searchParams.get('areaId');
+    const areaConfig = getDefaultAreaConfig();
 
-    // 如果沒有指定 areaId 或者是光復鄉，返回預設配置
-    if (!areaId || areaId === 'guangfu') {
-      return NextResponse.json({
-        success: true,
-        data: getDefaultAreaConfig(),
+    return NextResponse.json(
+      createSuccessResponse('成功獲取區域配置', {
         areaType: 'guangfu',
-      });
-    }
-
-    // 嘗試獲取測試區域配置
-    const testArea = await getTestArea(areaId);
-
-    if (testArea) {
-      const areaConfig = testAreaToAreaConfig(testArea);
-      return NextResponse.json({
-        success: true,
-        data: areaConfig,
-        areaType: areaId,
-      });
-    } else {
-      // 測試區域不存在，回退到預設配置
-      return NextResponse.json({
-        success: true,
-        data: getDefaultAreaConfig(),
-        areaType: 'guangfu',
-        warning: `測試區域 ${areaId} 不存在，已回退到光復鄉`,
-      });
-    }
+        config: areaConfig,
+      }),
+      { status: HttpStatus.OK }
+    );
   } catch (error) {
-    console.error('獲取區域配置失敗:', error);
-
-    // 發生錯誤時回退到預設配置
-    return NextResponse.json({
-      success: true,
-      data: getDefaultAreaConfig(),
-      areaType: 'guangfu',
-      warning: '獲取區域配置失敗，使用預設配置',
+    console.error('獲取區域配置錯誤:', error);
+    return NextResponse.json(createErrorResponse(ErrorMessages.INTERNAL_ERROR), {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
     });
   }
 }
 
 /**
- * POST /api/current-area - 設定當前區域（用於客戶端區域切換）
+ * POST /api/current-area - 設定當前區域
+ *
+ * 階段五：只接受光復鄉配置
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { areaType } = body;
 
-    if (!areaType || typeof areaType !== 'string') {
-      return NextResponse.json(createErrorResponse('無效的區域類型'), {
-        status: HttpStatus.BAD_REQUEST,
-      });
-    }
-
-    // 驗證區域類型
+    // 階段五簡化：只接受光復鄉
     if (areaType === 'guangfu') {
-      return NextResponse.json(createSuccessResponse('已切換到光復鄉', { areaType: 'guangfu' }), {
-        status: HttpStatus.OK,
-      });
-    }
-
-    // 驗證測試區域是否存在
-    const testArea = await getTestArea(areaType);
-    if (!testArea) {
-      return NextResponse.json(createErrorResponse(`測試區域 ${areaType} 不存在`), {
-        status: HttpStatus.NOT_FOUND,
-      });
+      return NextResponse.json(
+        createSuccessResponse('已設定為光復鄉區域', { areaType: 'guangfu' }),
+        { status: HttpStatus.OK }
+      );
     }
 
     return NextResponse.json(
-      createSuccessResponse(`已切換到測試區域: ${testArea.displayName}`, {
-        areaType,
-        areaConfig: testAreaToAreaConfig(testArea),
-      }),
-      { status: HttpStatus.OK }
+      createErrorResponse(`階段五已移除測試區域功能，僅支援光復鄉 (guangfu)`),
+      { status: HttpStatus.BAD_REQUEST }
     );
   } catch (error) {
-    console.error('設定當前區域失敗:', error);
-    return NextResponse.json(createErrorResponse('設定區域失敗'), {
+    console.error('設定區域配置錯誤:', error);
+    return NextResponse.json(createErrorResponse(ErrorMessages.INTERNAL_ERROR), {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
     });
   }
+}
+
+/**
+ * 處理不支援的 HTTP 方法
+ */
+export async function PUT() {
+  return NextResponse.json(createErrorResponse(ErrorMessages.METHOD_NOT_ALLOWED), {
+    status: HttpStatus.METHOD_NOT_ALLOWED,
+  });
+}
+
+export async function DELETE() {
+  return NextResponse.json(createErrorResponse(ErrorMessages.METHOD_NOT_ALLOWED), {
+    status: HttpStatus.METHOD_NOT_ALLOWED,
+  });
 }

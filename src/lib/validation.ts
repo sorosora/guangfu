@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-// 區域配置 Schema（用於前端傳遞完整的區域資訊）
-const AreaConfigSchema = z.object({
+// 區域配置 Schema（用於前端傳遞完整的區域資訊）- 保留供未來使用
+export const AreaConfigSchema = z.object({
   name: z.string(),
   displayName: z.string(),
   bounds: z.object({
@@ -23,14 +23,13 @@ const AreaConfigSchema = z.object({
   gridPrecision: z.number(),
 });
 
-// 回報請求資料驗證 Schema
+// 回報請求資料驗證 Schema（階段五簡化：移除 areaConfig 參數）
 export const ReportRequestSchema = z.object({
   lat: z.number().min(-90, '緯度必須在 -90 到 90 之間').max(90, '緯度必須在 -90 到 90 之間'),
   lon: z.number().min(-180, '經度必須在 -180 到 180 之間').max(180, '經度必須在 -180 到 180 之間'),
   state: z.union([z.literal(0), z.literal(1)]).refine((val) => val === 0 || val === 1, {
     message: '狀態必須為 0（已清除）或 1（有淤泥）',
   }),
-  areaConfig: AreaConfigSchema.optional(),
 });
 
 // 推導型別
