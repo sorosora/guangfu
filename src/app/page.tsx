@@ -439,7 +439,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative w-full h-screen overflow-hidden">
+    <main className="relative w-full h-dvh overflow-hidden">
       {renderContent()}
       <PermissionModal
         isOpen={isPermissionModalOpen}

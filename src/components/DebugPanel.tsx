@@ -202,7 +202,7 @@ export default function DebugPanel({ className }: DebugPanelProps) {
         size="sm"
         onClick={() => setIsOpen(true)}
         className={cn(
-          'z-[1010] fixed top-4 left-4 bg-white/90 backdrop-blur-sm',
+          'z-[1010] fixed top-4 right-4 bg-white/90 backdrop-blur-sm',
           'border-gray-300 hover:bg-gray-50',
           className
         )}

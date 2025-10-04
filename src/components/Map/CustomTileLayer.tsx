@@ -169,8 +169,8 @@ export default function CustomTileLayer({ opacity = 0.7, zIndex = 1000 }: Custom
     // 立即檢查一次
     checkVersion();
 
-    // 每 30 秒檢查一次更新
-    const interval = setInterval(checkVersion, 30000);
+    // 每 180 秒檢查一次更新
+    const interval = setInterval(checkVersion, 180000);
 
     return () => clearInterval(interval);
   }, [tilesBaseUrl, currentAreaConfig, currentVersion, useOGCFormat]);

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Location } from '@/types/map';
 
 interface ReportButtonsProps {
@@ -16,15 +16,49 @@ export default function ReportButtons({
   onReport,
   disabled = false,
 }: ReportButtonsProps) {
+  // 基本狀態
   const [loading, setLoading] = useState<0 | 1 | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [clickedButton, setClickedButton] = useState<0 | 1 | null>(null);
+  const countdownTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // 清理計時器
+  useEffect(() => {
+    return () => {
+      if (countdownTimer.current) clearTimeout(countdownTimer.current);
+    };
+  }, []);
+
+  // 倒數計時效果
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown > 0) {
+      countdownTimer.current = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => {
+        if (countdownTimer.current) clearTimeout(countdownTimer.current);
+      };
+    } else {
+      // 倒數結束處理
+      setCountdown(null);
+      setClickedButton(null);
+    }
+  }, [countdown]);
 
   const handleReport = async (state: 0 | 1) => {
     if (!userLocation || disabled) return;
 
     setLoading(state);
+    setCountdown(3); // 開始3秒倒數
+    setClickedButton(state); // 記錄哪個按鈕被點擊
+
+    // 立即執行 API 回報
     try {
       await onReport(state);
     } finally {
+      // API 完成後清除 loading 狀態
       setLoading(null);
     }
   };
@@ -66,34 +100,48 @@ export default function ReportButtons({
 
       {/* 回報按鈕 */}
       <div className="grid grid-cols-2 gap-3">
-        {/* 有淤泥按鈕 */}
+        {/* 有需要按鈕 */}
         <Button
           size="lg"
           className="h-16 text-lg font-medium"
-          disabled={!isLocationAvailable || disabled || loading !== null}
+          disabled={!isLocationAvailable || disabled || loading !== null || countdown !== null}
           onClick={() => handleReport(1)}
         >
-          {loading === 1 ? (
-            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          ) : (
-            <span className="mr-2">🪏</span>
-          )}
-          有淤泥
+          <div className="flex items-center space-x-2">
+            <span>🪏</span>
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-md">有需要</span>
+              <div className="relative h-5 flex items-center justify-center">
+                {clickedButton === 1 && countdown !== null ? (
+                  <span className="text-sm font-semibold tabular-nums">00:0{countdown}</span>
+                ) : (
+                  <span className="text-md opacity-80">有淤泥</span>
+                )}
+              </div>
+            </div>
+          </div>
         </Button>
 
-        {/* 無淤泥按鈕 */}
+        {/* 好多了按鈕 */}
         <Button
           size="lg"
           className="h-16 text-lg font-medium"
-          disabled={!isLocationAvailable || disabled || loading !== null}
+          disabled={!isLocationAvailable || disabled || loading !== null || countdown !== null}
           onClick={() => handleReport(0)}
         >
-          {loading === 0 ? (
-            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          ) : (
-            <span className="mr-2">✨</span>
-          )}
-          已清除
+          <div className="flex items-center space-x-2">
+            <span>✨</span>
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-md">好多了</span>
+              <div className="relative h-5 flex items-center justify-center">
+                {clickedButton === 0 && countdown !== null ? (
+                  <span className="text-sm font-semibold tabular-nums">00:0{countdown}</span>
+                ) : (
+                  <span className="text-md opacity-80">清理了</span>
+                )}
+              </div>
+            </div>
+          </div>
         </Button>
       </div>
 
