@@ -134,9 +134,6 @@ export default function Home() {
       } else {
         setAppState('unavailable');
       }
-
-      const errorMessage = error instanceof Error ? error.message : '位置服務不可用';
-      toast.error(errorMessage);
     }
   }, [currentAreaConfig]);
 

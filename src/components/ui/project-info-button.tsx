@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { Info, ExternalLink, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAtom } from 'jotai';
+import { projectInfoOpenAtom } from '@/stores/project-info-store';
 
 export function ProjectInfoButton() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useAtom(projectInfoOpenAtom);
 
   return (
     <>

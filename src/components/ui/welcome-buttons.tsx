@@ -17,7 +17,7 @@ export function WelcomeButtons({ onJoin, areaName }: WelcomeButtonsProps) {
           <MapPin className="w-4 h-4" />
           <span>{areaName}</span>
         </div>
-        <div className="text-xs text-gray-500">協助颱風後清淤工作，一起讓家園更美好</div>
+        <div className="text-xs text-gray-500">協助颱風災後各項工作，一起讓家園更美好</div>
       </div>
 
       {/* 加入按鈕 */}
@@ -31,7 +31,7 @@ export function WelcomeButtons({ onJoin, areaName }: WelcomeButtonsProps) {
         className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6 h-16"
       >
         <Users className="w-5 h-5 mr-2" />
-        加入鏟子超人Go
+        加入光復計畫
       </Button>
     </div>
   );
