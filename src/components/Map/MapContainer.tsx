@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Circle } from 'react-leaflet';
+import * as L from 'leaflet';
 import { Location, LayerVisibility } from '@/types/map';
 import { AreaConfig, SimpleBounds, getMapBounds } from '@/config/areas';
 import CustomTileLayer from './CustomTileLayer';
@@ -10,12 +11,17 @@ import KMZLayer from './KMZLayer';
 import CenterScaleControl from './CenterScaleControl';
 import 'leaflet/dist/leaflet.css';
 
-// 延遲載入 Leaflet 以避免 SSR 問題
-let L: typeof import('leaflet') | null = null;
+// 修復 Leaflet 預設圖示問題
+delete (L.Icon.Default.prototype as typeof L.Icon.Default.prototype & { _getIconUrl?: unknown })
+  ._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 // 工具函數：將 SimpleBounds 轉換為 Leaflet 邊界
 function simpleBoundsToLeafletBounds(bounds: SimpleBounds) {
-  if (!L) return null;
   return L.latLngBounds([
     [bounds.minLat, bounds.minLng], // 西南角
     [bounds.maxLat, bounds.maxLng], // 東北角
@@ -63,9 +69,9 @@ function MapController({
   useEffect(() => {
     if (lockCenter) {
       map.dragging.disable();
-      map.scrollWheelZoom.disable();
-      map.doubleClickZoom.disable();
-      map.touchZoom.disable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
     } else {
       map.dragging.enable();
       map.scrollWheelZoom.enable();
@@ -179,11 +185,11 @@ function LocationMarkerInternal({
 }) {
   const map = useMap();
   const [isVisible, setIsVisible] = useState(true);
-  const [userLocationIcon, setUserLocationIcon] = useState<import('leaflet').Icon | null>(null);
+  const [userLocationIcon, setUserLocationIcon] = useState<L.Icon | null>(null);
 
   useEffect(() => {
     // 建立使用者位置的自訂圖示
-    if (L && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       const svgIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="#ffffff"/></svg>`;
       const iconDataUrl =
         typeof btoa !== 'undefined'
@@ -246,7 +252,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   },
   ref
 ) {
-  const leafletMapRef = useRef<import('leaflet').Map | null>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
   const mapControlRef = useRef<MapRef | null>(null);
 
   // 將 ref 轉發到 mapControlRef
@@ -257,51 +263,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   // 使用動態中心點，如果沒有傳入則使用當前區域配置的中心點
   const mapCenter = center || areaConfig.center;
-
-  // 動態載入 Leaflet
-  useEffect(() => {
-    // 動態載入 Leaflet
-    const loadLeaflet = async () => {
-      if (typeof window !== 'undefined' && !L) {
-        try {
-          const leaflet = await import('leaflet');
-          L = leaflet.default;
-
-          // 修復 Leaflet 預設圖示問題
-          delete (
-            L.Icon.Default.prototype as typeof L.Icon.Default.prototype & { _getIconUrl?: unknown }
-          )._getIconUrl;
-          L.Icon.Default.mergeOptions({
-            iconRetinaUrl:
-              'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-            shadowUrl:
-              'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-          });
-        } catch (error) {
-          console.error('載入 Leaflet 失敗:', error);
-          // 即使載入失敗，也設定 L 為空物件以避免無限載入
-          L = {} as typeof import('leaflet');
-        }
-      }
-    };
-
-    loadLeaflet();
-  }, []);
-
-  if (!L || Object.keys(L).length === 0) {
-    return (
-      <div className={className}>
-        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p className="text-gray-600">載入地圖庫中...</p>
-            <p className="text-xs text-gray-500 mt-1">若持續載入請重新整理頁面</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // 計算初始地圖邊界（使用回報邊界作為預設視圖）
   const bounds = simpleBoundsToLeafletBounds(areaConfig.bounds);
@@ -331,8 +292,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       ref={leafletMapRef}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://maps.nlsc.gov.tw/">國土測繪中心</a>'
+        url="https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"
         maxZoom={19}
       />
 

@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMap } from 'react-leaflet';
+import * as L from 'leaflet';
 import type { KMZLayer } from 'leaflet-kmz';
-
-// 延遲載入 Leaflet 和 leaflet-kmz 以避免 SSR 問題
-let L: typeof import('leaflet') | null = null;
 
 interface KMZLayerProps {
   url: string;
@@ -17,40 +15,49 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
   const kmzLayerRef = useRef<KMZLayer | null>(null);
   const [dependenciesLoaded, setDependenciesLoaded] = useState(false);
 
-  // 動態載入依賴
+  // 動態載入 leaflet-kmz 插件
   useEffect(() => {
-    const loadDependencies = async () => {
+    const loadKmzPlugin = async () => {
       if (typeof window === 'undefined') return;
 
       try {
-        // 載入 Leaflet
-        if (!L) {
-          const leaflet = await import('leaflet');
-          L = leaflet.default;
+        // 確保 window.L 可用給 leaflet-kmz 插件
+        if (!window.L) {
+          (window as typeof window & { L: typeof L }).L = L;
         }
 
-        // 載入 leaflet-kmz
+        // 載入 leaflet-kmz - 這個插件會自動註冊到 window.L
         await import('leaflet-kmz');
-        // 確保插件正確註冊到 Leaflet
-        if (L && typeof (L as unknown as { kmzLayer?: unknown }).kmzLayer !== 'function') {
-          // 如果自動註冊失敗，手動執行
-          console.warn('leaflet-kmz 未自動註冊，嘗試手動初始化');
+
+        // 等待一個 tick 確保插件完全載入
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // 檢查插件是否正確註冊到 window.L
+        if (typeof (window.L as typeof L & { kmzLayer?: unknown }).kmzLayer === 'function') {
+          console.log('leaflet-kmz 插件載入成功');
+          setDependenciesLoaded(true);
+        } else {
+          console.error('leaflet-kmz 插件載入後未在 window.L 對象上找到 kmzLayer 方法');
+          console.log('window.L 對象可用的方法:', Object.keys(window.L || {}));
+          // 即使失敗也設為 true，避免無限重試
+          setDependenciesLoaded(true);
         }
-        setDependenciesLoaded(true);
       } catch (error) {
         console.error('載入 KMZ 依賴失敗:', error);
+        // 設為 true 避免無限重試
+        setDependenciesLoaded(true);
       }
     };
 
     if (!dependenciesLoaded) {
-      loadDependencies();
+      loadKmzPlugin();
     }
   }, [dependenciesLoaded]);
 
   // 載入 KMZ 檔案 - 只在相關依賴變化時重新載入
   useEffect(() => {
     const loadKMZ = async () => {
-      if (!L || !dependenciesLoaded || !url) return;
+      if (!dependenciesLoaded || !url) return;
 
       try {
         // 清理舊的圖層
@@ -63,11 +70,12 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         const kmzUrl = String(url);
 
         // 檢查 leaflet-kmz 插件是否正確載入
-        const leafletWithKmz = L as unknown as {
+        const leafletWithKmz = window.L as typeof L & {
           kmzLayer?: (options?: Record<string, unknown>) => KMZLayer;
         };
         if (typeof leafletWithKmz.kmzLayer !== 'function') {
-          throw new Error('leaflet-kmz 插件未正確載入');
+          console.warn('leaflet-kmz 插件未正確載入，跳過 KMZ 圖層顯示');
+          return;
         }
 
         // 建立新的 KMZ 圖層

@@ -5,10 +5,12 @@ import { useMap } from 'react-leaflet';
 import { useAtom } from 'jotai';
 import { currentAreaConfigAtom } from '@/stores/area-store';
 
+import * as L from 'leaflet';
+
 // 擴展 Window 介面以包含 Leaflet
 declare global {
   interface Window {
-    L: typeof import('leaflet');
+    L: typeof L;
   }
 }
 

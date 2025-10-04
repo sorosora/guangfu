@@ -30,13 +30,38 @@ export default function ReportButtons({
   };
 
   const isLocationAvailable = !!userLocation;
+  const isOutOfBounds = isLocationAvailable && disabled;
+
+  // 決定狀態文字和樣式
+  const getLocationStatus = () => {
+    if (!isLocationAvailable) {
+      return {
+        text: '正在取得位置...',
+        className: 'text-gray-500',
+      };
+    }
+
+    if (isOutOfBounds) {
+      return {
+        text: '不在範圍內，無法使用下面功能',
+        className: 'text-orange-600',
+      };
+    }
+
+    return {
+      text: '已取得位置',
+      className: 'text-primary',
+    };
+  };
+
+  const status = getLocationStatus();
 
   return (
     <div className="p-2 max-w-md mx-auto space-y-3 relative">
       {/* 位置狀態指示 */}
-      <div className="flex items-center justify-center space-x-2 text-sm text-primary">
+      <div className={`flex items-center justify-center space-x-2 text-sm ${status.className}`}>
         <MapPin className="w-4 h-4" />
-        <span>{isLocationAvailable ? '已取得位置' : '正在取得位置...'}</span>
+        <span>{status.text}</span>
       </div>
 
       {/* 回報按鈕 */}

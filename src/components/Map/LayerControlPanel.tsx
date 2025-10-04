@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Shield, Activity, Layers } from 'lucide-react';
+import { Shield, Users, Layers } from 'lucide-react';
 
 import { LayerVisibility } from '@/types/map';
 
@@ -29,10 +29,10 @@ export default function LayerControlPanel({
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
           className="bg-white shadow-lg hover:bg-gray-50 border-gray-300"
-          aria-label="圖層控制"
+          aria-label="功能選單"
         >
           <Layers className="w-4 h-4 mr-1" />
-          <span className="text-sm font-medium">圖層</span>
+          <span className="text-sm font-medium">選單</span>
         </Button>
       </div>
 
@@ -56,7 +56,7 @@ export default function LayerControlPanel({
         <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 mx-2 mb-2 pointer-events-auto">
           {/* 標題 */}
           <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">圖層控制</h3>
+            <h3 className="text-lg font-semibold text-gray-800">功能選單</h3>
           </div>
 
           {/* 圖層開關 */}
@@ -90,11 +90,11 @@ export default function LayerControlPanel({
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
                     : 'bg-white border-gray-300 text-gray-400 hover:border-blue-300'
                 )}
-                aria-label={`${layers.tiles ? '隱藏' : '顯示'}即時回報圖層`}
+                aria-label={`${layers.tiles ? '隱藏' : '顯示'}群眾回報圖層`}
               >
-                <Activity className="w-6 h-6 mx-auto" />
+                <Users className="w-6 h-6 mx-auto" />
               </button>
-              <span className="text-xs font-medium text-gray-700 text-center">即時回報</span>
+              <span className="text-xs font-medium text-gray-700 text-center">群眾回報</span>
             </div>
 
             {/* 預估區域 */}
@@ -119,6 +119,30 @@ export default function LayerControlPanel({
           {/* Attribution 資訊 */}
           <div className="border-t border-gray-100 pt-3 mb-3">
             <div className="text-xs text-gray-400 text-center">
+              <span>
+                <a
+                  href="https://www.google.com/maps/d/viewer?mid=1qOHK91tv68NacIN1GVTDYKn10ojb-t8&usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600"
+                >
+                  光復鄉-救災資訊整合
+                </a>
+                <span> (10/05 更新)</span>
+              </span>
+
+              <span> | </span>
+              <span>
+                <a
+                  href="https://maps.nlsc.gov.tw/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600"
+                >
+                  國土測繪中心
+                </a>
+              </span>
+              <span> | </span>
               <a
                 href="https://leafletjs.com"
                 target="_blank"
@@ -127,18 +151,6 @@ export default function LayerControlPanel({
               >
                 Leaflet
               </a>
-              <span> | </span>
-              <span>
-                ©
-                <a
-                  href="https://www.openstreetmap.org/copyright"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-600"
-                >
-                  OpenStreetMap
-                </a>
-              </span>
             </div>
           </div>
 

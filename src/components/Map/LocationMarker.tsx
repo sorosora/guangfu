@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Marker, Circle, useMap } from 'react-leaflet';
+import * as L from 'leaflet';
 import { Location } from '@/types/map';
 
 interface LocationMarkerProps {
@@ -10,9 +11,8 @@ interface LocationMarkerProps {
   showAccuracyCircle?: boolean;
 }
 
-// 延遲載入 Leaflet
-let L: typeof import('leaflet') | null = null;
-let userLocationIcon: import('leaflet').Icon | null = null;
+// 使用者位置圖示快取
+let userLocationIcon: L.Icon | null = null;
 
 export default function LocationMarker({
   position,
@@ -26,29 +26,21 @@ export default function LocationMarker({
   useEffect(() => {
     setIsClient(true);
 
-    // 動態載入 Leaflet 和圖示
-    const loadLeaflet = async () => {
-      if (typeof window !== 'undefined' && !L) {
-        const leaflet = await import('leaflet');
-        L = leaflet.default;
+    // 建立使用者位置的自訂圖示
+    if (typeof window !== 'undefined' && !userLocationIcon) {
+      const svgIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="#ffffff"/></svg>`;
+      const iconDataUrl =
+        typeof window !== 'undefined' && typeof btoa !== 'undefined'
+          ? 'data:image/svg+xml;base64,' + btoa(svgIcon)
+          : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
 
-        // 建立使用者位置的自訂圖示
-        const svgIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="#ffffff"/></svg>`;
-        const iconDataUrl =
-          typeof window !== 'undefined' && typeof btoa !== 'undefined'
-            ? 'data:image/svg+xml;base64,' + btoa(svgIcon)
-            : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
-
-        userLocationIcon = new L.Icon({
-          iconUrl: iconDataUrl,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-          popupAnchor: [0, 0],
-        });
-      }
-    };
-
-    loadLeaflet();
+      userLocationIcon = new L.Icon({
+        iconUrl: iconDataUrl,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, 0],
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -60,6 +52,7 @@ export default function LocationMarker({
     setIsVisible(isInView);
   }, [position, map, isClient]);
 
+  // 等待客戶端渲染和圖示載入
   if (!isClient || !isVisible || !userLocationIcon) return null;
 
   return (

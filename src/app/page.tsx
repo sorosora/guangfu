@@ -84,7 +84,6 @@ export default function Home() {
   const initLocationTracking = useCallback(async () => {
     try {
       setAppState('requesting');
-      toast.info('正在請求位置權限...');
 
       const location = await getCurrentPosition();
       setUserLocation(location);
@@ -93,12 +92,6 @@ export default function Home() {
       // 使用新的回報邊界檢查
       const canReport = canReportAtLocation(location.lat, location.lon, currentAreaConfig);
       isWithinBoundsRef.current = canReport;
-
-      if (!canReport && !currentAreaConfig.allowUnlimitedReporting) {
-        toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
-      } else {
-        toast.success('已取得您的位置');
-      }
 
       // 開始監控位置變化
       const id = watchPosition(
@@ -111,19 +104,6 @@ export default function Home() {
             newLocation.lon,
             currentAreaConfig
           );
-
-          // 只在邊界狀態改變時顯示 toast（僅限於非無限制回報的區域）
-          if (
-            !currentAreaConfig.allowUnlimitedReporting &&
-            isWithinBoundsRef.current !== null &&
-            isWithinBoundsRef.current !== newCanReport
-          ) {
-            if (!newCanReport) {
-              toast.warning(`您已離開${currentAreaConfig.displayName}範圍`);
-            } else {
-              toast.success(`歡迎回到${currentAreaConfig.displayName}範圍`);
-            }
-          }
 
           isWithinBoundsRef.current = newCanReport;
         },
@@ -233,9 +213,6 @@ export default function Home() {
         const response = await submitReportWithRetry(reportData, 2, currentAreaConfig.name);
 
         if (response.success) {
-          const stateText = state === 1 ? '有淤泥' : '已清除';
-          toast.success(`${response.message || `已回報${stateText}`}`);
-
           // 可選：顯示額外的成功資訊
           if (response.data) {
             console.log('回報成功詳情:', response.data);
@@ -259,8 +236,14 @@ export default function Home() {
   // 切換鎖定中心模式
   const toggleLockCenter = useCallback(() => {
     setLockCenter(!lockCenter);
-    toast.info(lockCenter ? '已關閉跟隨模式' : '已開啟跟隨模式');
   }, [lockCenter]);
+
+  // 當 GPS 無效或超出邊界時，自動關閉跟隨模式
+  useEffect(() => {
+    if (lockCenter && (!userLocation || isWithinBoundsRef.current === false)) {
+      setLockCenter(false);
+    }
+  }, [lockCenter, userLocation]);
 
   // 處理地圖點擊
   const handleMapClick = useCallback((location: Location) => {
@@ -304,17 +287,6 @@ export default function Home() {
     if (userLocation) {
       const canReport = canReportAtLocation(userLocation.lat, userLocation.lon, currentAreaConfig);
       isWithinBoundsRef.current = canReport;
-
-      // 只有在非無限制回報的區域才顯示邊界提示
-      if (!currentAreaConfig.allowUnlimitedReporting) {
-        if (!canReport) {
-          toast.warning(`您不在${currentAreaConfig.displayName}範圍內，某些功能可能無法使用`);
-        } else {
-          toast.success(`已切換到${currentAreaConfig.displayName}`);
-        }
-      } else {
-        toast.success(`已切換到${currentAreaConfig.displayName}（無限制模式）`);
-      }
     }
   }, [userLocation, currentAreaConfig]);
 
@@ -337,7 +309,7 @@ export default function Home() {
         {/* 地圖容器 - 在所有狀態下都顯示 */}
         <DynamicMap
           ref={mapRef}
-          center={lockCenter && userLocation ? userLocation : currentAreaConfig.center}
+          center={lockCenter && userLocation ? userLocation : undefined}
           userLocation={userLocation || undefined}
           lockCenter={lockCenter}
           onMapClick={handleMapClick}
@@ -363,6 +335,7 @@ export default function Home() {
               <CenterLockButton
                 isLocked={lockCenter}
                 onToggle={toggleLockCenter}
+                disabled={!userLocation || isWithinBoundsRef.current === false}
                 className="relative"
               />
             </div>
