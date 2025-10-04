@@ -66,7 +66,7 @@ export default function Home() {
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
     tiles: true,
     manual: true,
-    kmz: true,
+    kmz: false,
   });
 
   // 客戶端初始化
@@ -303,7 +303,7 @@ export default function Home() {
   const renderContent = () => {
     // 統一的地圖和 UI 佈局
     return (
-      <div className="relative w-full h-screen overflow-hidden">
+      <div className="relative w-full h-dvh overflow-hidden">
         {/* 地圖容器 - 在所有狀態下都顯示 */}
         <DynamicMap
           ref={mapRef}
@@ -439,7 +439,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative w-full h-dvh overflow-hidden">
+    <main className="relative w-full min-h-svh overflow-hidden">
       {renderContent()}
       <PermissionModal
         isOpen={isPermissionModalOpen}
