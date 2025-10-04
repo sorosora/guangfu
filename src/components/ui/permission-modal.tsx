@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Shield, Users } from 'lucide-react';
+import { MapPin, AlertTriangle, Users } from 'lucide-react';
 import { useSetAtom } from 'jotai';
 import { projectInfoOpenAtom } from '@/stores/project-info-store';
 
