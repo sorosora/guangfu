@@ -15,6 +15,7 @@ import { useAtom } from 'jotai';
 import { currentAreaConfigAtom, currentAreaDisplayNameAtom } from '@/stores/area-store';
 import { submitReportWithRetry, ApiError } from '@/lib/api-client';
 import { ZoomButtons } from '@/components/ui/zoom-buttons';
+import { ProjectInfoButton } from '@/components/ui/project-info-button';
 import { MapRef } from '@/components/Map/MapContainer';
 import LayerControlPanel from '@/components/Map/LayerControlPanel';
 import DebugPanel from '@/components/DebugPanel';
@@ -318,6 +319,9 @@ export default function Home() {
           layerVisibility={layerVisibility}
           className="w-full h-screen"
         />
+
+        {/* 專案資訊按鈕 - 左上角 */}
+        <ProjectInfoButton />
 
         <div className="sticky bottom-0 right-0 px-2 pb-[max(8px,env(safe-area-inset-bottom))] z-[1010] flex flex-col gap-2 pointer-events-none left-full md:max-w-96">
           {/* 右上角按鈕組 - 在所有狀態下都顯示 */}
