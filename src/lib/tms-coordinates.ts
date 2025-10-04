@@ -20,7 +20,7 @@ export const TMS_CONFIG = {
   // 支援的縮放層級
   MIN_ZOOM: 14, // 區域概覽
   MAX_ZOOM: 19, // 高精度 (~0.6m/pixel)
-  PRIMARY_ZOOM: 19, // 主要使用的縮放層級
+  PRIMARY_ZOOM: 14, // 主要使用的縮放層級
 
   // 座標精度
   DECIMAL_PRECISION: 4, // lat/lng 小數點位數 (~11m 精度)
@@ -185,7 +185,7 @@ export function getAffectedTiles(
   }
 
   // 估算需要檢查的圖磚範圍
-  // 在 zoom 19，一個圖磚約 153m × 153m (因緯度而異)
+  // 在 zoom 14，一個圖磚約 4.9km × 4.9km (因緯度而異)
   const metersPerTile = TMS_CONFIG.EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
   const tileRadius = Math.ceil(radiusMeters / metersPerTile) + 1; // 加1確保覆蓋完整
 

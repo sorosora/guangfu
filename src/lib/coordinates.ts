@@ -15,10 +15,10 @@ import {
 /**
  * GPS 座標轉換為標準圖磚座標
  * @param location GPS 座標
- * @param zoom 縮放層級 (預設 19)
+ * @param zoom 縮放層級 (預設 14)
  * @returns 標準圖磚座標
  */
-export function gpsToStandardTileCoords(location: Location, zoom: number = 19): TileCoordinate {
+export function gpsToStandardTileCoords(location: Location, zoom: number = 14): TileCoordinate {
   return gpsToTileCoords(location.lat, location.lon, zoom);
 }
 
@@ -62,14 +62,14 @@ export function getGeoRangeEffect(center: Location, radiusMeters: number = 25): 
  * @param center 中心 GPS 座標
  * @param radiusMeters 影響半徑 (公尺)
  * @param areaConfig 區域配置 (可選)
- * @param zoom 縮放層級 (預設 19)
+ * @param zoom 縮放層級 (預設 14)
  * @returns 受影響的圖磚列表
  */
 export function getAffectedStandardTiles(
   center: Location,
   radiusMeters: number = 25,
   areaConfig?: AreaConfig,
-  zoom: number = 19
+  zoom: number = 14
 ): TileCoordinate[] {
   return getAffectedTiles(center.lat, center.lon, zoom, radiusMeters);
 }

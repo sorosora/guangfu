@@ -40,7 +40,7 @@ except ImportError as e:
 
 # 配置
 TILE_SIZE = TMSConfig.TILE_SIZE  # 256
-PRIMARY_ZOOM = TMSConfig.PRIMARY_ZOOM  # 19
+PRIMARY_ZOOM = TMSConfig.PRIMARY_ZOOM  # 14
 
 # 狀態定義
 STATE_CLEAR = 0        # 已清除
