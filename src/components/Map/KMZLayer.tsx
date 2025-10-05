@@ -14,6 +14,7 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
   const map = useMap();
   const kmzLayerRef = useRef<KMZLayer | null>(null);
   const [dependenciesLoaded, setDependenciesLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // 動態載入 leaflet-kmz 插件
   useEffect(() => {
@@ -54,10 +55,13 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
     }
   }, [dependenciesLoaded]);
 
-  // 載入 KMZ 檔案 - 只在相關依賴變化時重新載入
+  // 載入 KMZ 檔案 - 只在可見且依賴已載入時載入
   useEffect(() => {
     const loadKMZ = async () => {
-      if (!dependenciesLoaded || !url) return;
+      if (!dependenciesLoaded || !url || !visible) return;
+
+      // 如果已經載入過且 URL 沒變，就不重複載入
+      if (isLoaded && kmzLayerRef.current) return;
 
       try {
         // 清理舊的圖層
@@ -78,21 +82,30 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
           return;
         }
 
-        // 建立新的 KMZ 圖層
-        kmzLayerRef.current = leafletWithKmz.kmzLayer().addTo(map);
+        // 建立新的 KMZ 圖層（不直接加到地圖）
+        kmzLayerRef.current = leafletWithKmz.kmzLayer();
 
         // 監聽載入事件
         kmzLayerRef.current.on('load', () => {
           console.log('KMZ 檔案載入完成:', kmzUrl);
+          setIsLoaded(true);
         });
 
         kmzLayerRef.current.on('error', (e) => {
           console.error('KMZ 載入錯誤:', e);
+          setIsLoaded(false);
         });
 
+        // 載入 KMZ 檔案
         kmzLayerRef.current.load(kmzUrl);
+
+        // 如果可見，加到地圖
+        if (visible) {
+          kmzLayerRef.current.addTo(map);
+        }
       } catch (error) {
         console.error('KMZ 圖層建立失敗:', error);
+        setIsLoaded(false);
       }
     };
     loadKMZ();
@@ -107,12 +120,13 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         }
         kmzLayerRef.current = null;
       }
+      setIsLoaded(false);
     };
-  }, [url, map, dependenciesLoaded]);
+  }, [url, map, dependenciesLoaded, visible, isLoaded]);
 
   // 處理可見性變化
   useEffect(() => {
-    if (!kmzLayerRef.current) return;
+    if (!kmzLayerRef.current || !isLoaded) return;
 
     if (visible) {
       if (!map.hasLayer(kmzLayerRef.current as unknown as L.Layer)) {
@@ -123,7 +137,7 @@ export default function KMZLayer({ url, visible = true }: KMZLayerProps) {
         map.removeLayer(kmzLayerRef.current as unknown as L.Layer);
       }
     }
-  }, [visible, map]);
+  }, [visible, map, isLoaded]);
 
   return null;
 }
